@@ -1,0 +1,53 @@
+[project]
+name = "envtok-mace"
+version = "0.1.0"
+description = "From-scratch MACE interatomic potential with multi-node DDP training on the EnvTok subset of OMat24"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.10,<3.13"
+dependencies = [
+    "torch==2.7.1",
+    "e3nn==0.4.4",
+    "numpy",
+    "scipy",
+    "ase>=3.23",
+    "matscipy",
+    "h5py",
+    "pyyaml",
+    "ase-db-backends>=0.11.0",
+]
+
+[project.optional-dependencies]
+# Linux + CUDA only: fused tensor-product kernels
+cueq = ["cuequivariance==0.8.1", "cuequivariance-torch==0.8.1", "cuequivariance-ops-torch-cu12==0.8.1; sys_platform == 'linux'"]
+track = ["wandb"]
+
+[project.scripts]
+envtok-mace = "envtok_mace.cli:main"
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "scikit-learn",
+    # reference implementation, used only as an oracle in parity tests
+    "mace-torch==0.3.14",
+    # pure-PyTorch fallback of the cuEquivariance backend, for the backend tests on CPU
+    "cuequivariance==0.8.1",
+    "cuequivariance-torch==0.8.1",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/envtok_mace"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+filterwarnings = [
+    "ignore::FutureWarning:e3nn",
+    "ignore:The TorchScript type system:UserWarning",
+    "ignore:Setting the shape on a NumPy array:DeprecationWarning",
+]

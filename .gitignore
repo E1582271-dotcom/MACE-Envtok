@@ -1,0 +1,35 @@
+# Local-only material: third-party clones, downloads, private notes
+local/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Secrets and cluster settings
+.env
+
+# Data and training artefacts (never committed; see README for sources)
+*.pt
+*.pth
+*.ckpt
+*.model
+*.h5
+*.hdf5
+*.aselmdb
+*.lmdb
+*.extxyz
+*.xyz
+*.tar.gz
+*.zip
+wandb/
+!tests/fixtures/*
+
+# OS / editors
+.DS_Store
+.vscode/
+.idea/
+.claude/
