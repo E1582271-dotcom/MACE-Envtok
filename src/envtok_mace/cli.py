@@ -13,6 +13,8 @@ COMMANDS = {
     "matpes-build": ("envtok_mace.data.matpes", "convert the MatPES release into a Frames file"),
     "matpes": ("envtok_mace.bench.matpes", "score a model on MatPES and build the paper's tables"),
     "matcalc": ("envtok_mace.bench.matcalc", "MatCalc-Bench (formation energy, moduli, C_V, softening)"),
+    "stability": ("envtok_mace.bench.stability", "MLIP-Arena NPT compression MD stability"),
+    "nebdft2k": ("envtok_mace.bench.nebdft2k", "LiTraj nebDFT2k Li-ion migration barriers"),
     "ref-eval": ("envtok_mace.eval.reference", "evaluate a reference mace-torch model on a Frames file"),
     "train": ("envtok_mace.train.run", "train a model (one process per GPU)"),
     "eval": ("envtok_mace.eval.run_eval", "score checkpoints / mace-torch models on a Frames file"),

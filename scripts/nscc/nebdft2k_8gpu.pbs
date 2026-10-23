@@ -1,0 +1,35 @@
+#!/bin/bash
+# LiTraj nebDFT2k Li-migration barriers on 8 GPUs from any nodes, several NEB
+# workers per GPU (hops have no wall-clock score, only a 1 h safety limit). float64.
+# Prefetch the dataset on the login node first:
+#   envtok-mace nebdft2k --prefetch --cache $ENVTOK_SCRATCH/litraj_cache
+#   qsub -P <project> -v MODEL=$HOME/envtok_runs/envtok_8gpu/best.pt scripts/nscc/nebdft2k_8gpu.pbs
+#PBS -N envtok-neb
+#PBS -q normal
+#PBS -l select=8:ngpus=1:ncpus=16:mem=110gb:mpiprocs=1
+#PBS -l place=free
+#PBS -l walltime=12:00:00
+#PBS -j oe
+set -euo pipefail
+cd "${PBS_O_WORKDIR:-$PWD}"
+. scripts/nscc/env.sh
+. scripts/nscc/ranks_env.sh
+: "${MODEL:?}"
+ranks_layout
+LABEL=${LABEL:-ours}
+OUT=${OUT:-$ENVTOK_SCRATCH/nebdft2k_runs/$LABEL}
+CACHE=${CACHE:-$ENVTOK_SCRATCH/litraj_cache}
+AUTH=${AUTH:-$ENVTOK_SCRATCH/zenodo/benchmarks_nebdft2k/benchmarks/nebdft2k}
+WORKERS=${WORKERS:-4}
+export OMP_NUM_THREADS=$((16 / WORKERS))
+export RANK_LOG=$ENVTOK_SCRATCH/runs/logs/${PBS_JOBID%%.*}
+mkdir -p "$(dirname "$RANK_LOG")" "$OUT"
+echo "job $PBS_JOBID: $NRANKS GPUs on $RANK_NNODES node(s); per-node output: $RANK_LOG.<host>.log"
+
+run_ranks envtok-mace nebdft2k --model "$MODEL" --label "$LABEL" --out "$OUT" --cache "$CACHE" \
+    --workers "$WORKERS" --threads 16 --dtype float64 ${BACKEND:+--backend $BACKEND} \
+    ${EXTRA_ARGS:-} || true
+envtok-mace nebdft2k --summary "$AUTH/MACE-OMAT-0" "$AUTH/EnvTok" "$AUTH/DIRECT" \
+    "$AUTH/rdm/seed_1" "$AUTH/rdm/seed_2" "$AUTH/rdm/seed_3" "$AUTH/rdm/seed_4" "$OUT" \
+    --labels mace_omat0 authors_envtok authors_direct rdm1 rdm2 rdm3 rdm4 "$LABEL" \
+    --out "$OUT/summary"

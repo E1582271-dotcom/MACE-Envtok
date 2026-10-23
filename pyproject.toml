@@ -36,6 +36,10 @@ bench = [
     "spglib==2.7.0",
     "symfc==1.7.2",
     "pandas==2.3.3",
+    # MD stability (the arena's own MD task) and Li-migration NEB (dataset + metrics)
+    "mlip-arena==0.2.0",
+    "litraj==0.1",
+    "pyarrow",
 ]
 
 [project.scripts]

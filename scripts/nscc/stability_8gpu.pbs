@@ -1,0 +1,35 @@
+#!/bin/bash
+# MLIP-Arena NPT compression stability: 80 runs spread over 8 GPUs from any nodes,
+# one run per GPU at a time (the protocol's 3 x 600 s wall-clock budget per run
+# makes the score depend on step speed, so GPUs are not shared). float64, cueq.
+# Stage the RM24 database on the login node first:
+#   python -c "from huggingface_hub import hf_hub_download as h; h('atomind/mlip-arena', \
+#     'random-mixture.db', subfolder='stability', repo_type='dataset')"
+#   qsub -P <project> -v MODEL=$HOME/envtok_runs/envtok_8gpu/best.pt scripts/nscc/stability_8gpu.pbs
+#PBS -N envtok-stab
+#PBS -q normal
+#PBS -l select=8:ngpus=1:ncpus=16:mem=110gb:mpiprocs=1
+#PBS -l place=free
+#PBS -l walltime=08:00:00
+#PBS -j oe
+set -euo pipefail
+cd "${PBS_O_WORKDIR:-$PWD}"
+. scripts/nscc/env.sh
+. scripts/nscc/ranks_env.sh
+: "${MODEL:?}"
+ranks_layout
+LABEL=${LABEL:-ours}
+OUT=${OUT:-$ENVTOK_SCRATCH/stability_runs/$LABEL}
+AUTH=${AUTH:-$ENVTOK_SCRATCH/zenodo/benchmarks_md-stability/benchmarks/md-stability}
+export OMP_NUM_THREADS=${OMP_NUM_THREADS:-8}
+export RANK_LOG=$ENVTOK_SCRATCH/runs/logs/${PBS_JOBID%%.*}
+mkdir -p "$(dirname "$RANK_LOG")" "$OUT"
+echo "job $PBS_JOBID: $NRANKS GPUs on $RANK_NNODES node(s); per-node output: $RANK_LOG.<host>.log"
+
+run_ranks envtok-mace stability --model "$MODEL" --label "$LABEL" --out "$OUT" \
+    --dtype float64 ${BACKEND:+--backend $BACKEND} ${EXTRA_ARGS:-} || true
+envtok-mace stability --aggregate --label "$LABEL" --out "$OUT"
+envtok-mace stability --summary "$AUTH/MACE-OMAT-0" "$AUTH/EnvTok" "$AUTH/DIRECT" \
+    "$AUTH/rdm/seed_1" "$AUTH/rdm/seed_2" "$AUTH/rdm/seed_3" "$AUTH/rdm/seed_4" "$OUT" \
+    --labels mace_omat0 authors_envtok authors_direct rdm1 rdm2 rdm3 rdm4 "$LABEL" \
+    --out "$OUT/summary"
