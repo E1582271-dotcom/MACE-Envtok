@@ -126,6 +126,8 @@ def run_hop(row: dict, calcs, cache: Path, out: Path, label: str, timeout: float
         except Exception:
             tb = traceback.format_exc()
             (out / f".failed_{path.stem}.txt").write_text(tb)
+            if "CUDA error" in tb:  # device fault: this process can no longer use the GPU
+                raise SystemExit(f"CUDA device error in {edge}; worker stopped, rerun needed")
             last = "oom" if "out of memory" in tb.lower() else "crash"
     done.write_text("done\n")
     if result is None:

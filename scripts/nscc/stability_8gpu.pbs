@@ -32,4 +32,4 @@ envtok-mace stability --aggregate --label "$LABEL" --out "$OUT"
 envtok-mace stability --summary "$AUTH/MACE-OMAT-0" "$AUTH/EnvTok" "$AUTH/DIRECT" \
     "$AUTH/rdm/seed_1" "$AUTH/rdm/seed_2" "$AUTH/rdm/seed_3" "$AUTH/rdm/seed_4" "$OUT" \
     --labels mace_omat0 authors_envtok authors_direct rdm1 rdm2 rdm3 rdm4 "$LABEL" \
-    --out "$OUT/summary"
+    --speed-ref authors_envtok --out "$OUT/summary"

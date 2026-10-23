@@ -34,6 +34,7 @@ from ..data.constants import Z_TABLE
 
 ALLOWED_Z = frozenset(Z_TABLE)
 SURVIVED = 0.999       # normalized final step of a finished run (~0.9996)
+BUDGET_S = 3 * 600.0   # wall-clock budget per run: three attempts of 600 s
 T_BLOWUP = 1e5         # K; the run targets <= 3000 K
 OUTCOMES = ("survived", "diverged", "oom", "other", "truncated", "missing")
 TOTAL_PS, T_START, T_END, P_END_GPA = 10.0, 300.0, 3000.0, 500.0
@@ -114,6 +115,12 @@ def run_one(idx: int, atoms, calc, out: Path, label: str, timeout: float = 600.0
         except Exception:
             tb = traceback.format_exc()
             (out / f".failed_{path.stem}.txt").write_text(tb)
+            if "CUDA error" in tb:
+                # A device fault (e.g. an illegal memory access) leaves this process's
+                # CUDA context unusable, so every later run here would fail at once.
+                # It says nothing about the model: leave the run unfinished for a rerun
+                # and stop this rank.
+                raise SystemExit(f"CUDA device error in {path.name}; rank stopped, rerun needed")
             last = "oom" if "out of memory" in tb.lower() else "crash"
         finally:
             try:
@@ -224,13 +231,16 @@ def classify(run_dir: str | Path, n_npt: int = 80):
     if len(hits) != 1:
         raise ValueError(f"expected one *-compression.parquet in {run_dir}, found {hits}")
     frames = pd.read_parquet(hits[0], columns=["source", "natoms", "normalized_final_step",
-                                               "temperatures"])
+                                               "temperatures", "seconds_per_step",
+                                               "target_steps"])
     temps = pd.to_numeric(frames["temperatures"], errors="coerce")
     frames = frames.assign(bad_t=~np.isfinite(temps) | (temps.abs() > T_BLOWUP))
     g = frames.groupby("source", sort=True)
     per = pd.DataFrame({"natoms": g["natoms"].first(),
                         "nfs": pd.to_numeric(g["normalized_final_step"].first(), errors="coerce"),
-                        "temp_blowup": g["bad_t"].any()}).reset_index()
+                        "temp_blowup": g["bad_t"].any(),
+                        "seconds_per_step": g["seconds_per_step"].first(),
+                        "target_steps": g["target_steps"].first()}).reset_index()
     per["idx"] = per["source"].str.extract(_IDX_RE)[0].astype(int)
     per = per[per["idx"] < n_npt]
 
@@ -256,6 +266,24 @@ def classify(run_dir: str | Path, n_npt: int = 80):
     return per.sort_values("idx").reset_index(drop=True)
 
 
+def speed_matched(per, ref):
+    """``per`` as it would have scored at the step speed of the reference runs ``ref``.
+
+    The protocol's 1,800 s wall-clock budget truncates slow runs, so a faster
+    implementation finishes more of them. For each structure, cut the run where
+    the reference setup would have run out of time; an outcome later than that
+    point becomes 'truncated'.
+    """
+    reach = (BUDGET_S / (ref["seconds_per_step"] * ref["target_steps"])).clip(upper=1.0)
+    reach = per["idx"].map(dict(zip(ref["idx"], reach)))
+    out = per.copy()
+    cut = reach.notna() & (reach < SURVIVED) & (out["nfs"] > reach)
+    out.loc[cut, "outcome"] = "truncated"
+    out.loc[cut, "nfs"] = reach[cut]
+    out["completion"] = out["nfs"].fillna(0.0).clip(lower=0.0)
+    return out
+
+
 def rates(per) -> dict:
     n = len(per)
     r = {"n_runs": n}
@@ -274,12 +302,19 @@ def rates(per) -> dict:
     return r
 
 
-def summary(dirs: list[str], labels: list[str], n_npt: int = 80) -> dict:
-    """Rates per model; labels starting with ``rdm`` are also pooled into ``random``."""
+def summary(dirs: list[str], labels: list[str], n_npt: int = 80,
+            speed_ref: str | None = None) -> dict:
+    """Rates per model; labels starting with ``rdm`` are also pooled into ``random``.
+    With ``speed_ref`` (a label), every other model is also scored at that model's
+    step speed, as ``<label>@speed_of_<ref>``."""
     import pandas as pd
 
     per = {L: classify(d, n_npt) for L, d in zip(labels, dirs)}
     out = {L: rates(p) for L, p in per.items()}
+    if speed_ref:
+        for L in labels:
+            if L != speed_ref:
+                out[f"{L}@speed_of_{speed_ref}"] = rates(speed_matched(per[L], per[speed_ref]))
     seeds = [L for L in labels if L.lower().startswith("rdm")]
     if seeds:
         out["random"] = rates(pd.concat([per[s] for s in seeds], ignore_index=True))
@@ -303,6 +338,8 @@ def add_arguments(p: argparse.ArgumentParser) -> None:
     p.add_argument("--aggregate", action="store_true", help="write this label's parquet")
     p.add_argument("--summary", nargs="+", default=None, metavar="DIR")
     p.add_argument("--labels", nargs="+", default=None)
+    p.add_argument("--speed-ref", default=None,
+                   help="label whose step speed the other models are also scored at")
 
 
 def run(args: argparse.Namespace) -> None:
@@ -310,13 +347,13 @@ def run(args: argparse.Namespace) -> None:
         import json
 
         labels = args.labels or [Path(d).name for d in args.summary]
-        res = summary(args.summary, labels, args.n_npt)
+        res = summary(args.summary, labels, args.n_npt, args.speed_ref)
         Path(args.out).mkdir(parents=True, exist_ok=True)
         (Path(args.out) / "stability_summary.json").write_text(json.dumps(res, indent=1))
-        print(f"{'model':16s} {'complete%':>9s} {'survived':>8s} {'diverged':>8s} {'oom':>4s} "
+        print(f"{'model':36s} {'complete%':>9s} {'survived':>8s} {'diverged':>8s} {'oom':>4s} "
               f"{'other':>5s} {'trunc':>5s} {'first end ps':>12s}")
         for L, r in res.items():
-            print(f"{L:16s} {r['mean_completion_pct']:9.1f} {r['n_survived']:8d} "
+            print(f"{L:36s} {r['mean_completion_pct']:9.1f} {r['n_survived']:8d} "
                   f"{r['n_diverged']:8d} {r['n_oom']:4d} {r['n_other']:5d} "
                   f"{r['n_truncated']:5d} {r['first_end_ps']:12.2f}")
         return

@@ -11,9 +11,9 @@ pytest.importorskip("pyarrow")
 from envtok_mace.bench import nebdft2k, stability  # noqa: E402
 
 
-def _frames(source, nfs, temps, natoms=100):
+def _frames(source, nfs, temps, natoms=100, sps=0.1):
     return pd.DataFrame({"source": source, "natoms": natoms, "normalized_final_step": nfs,
-                         "temperatures": temps})
+                         "temperatures": temps, "seconds_per_step": sps, "target_steps": 5000})
 
 
 def test_stability_outcomes_follow_the_papers_precedence(tmp_path):
@@ -38,6 +38,17 @@ def test_stability_outcomes_follow_the_papers_precedence(tmp_path):
     expected = (0.9996 + 0.4 + 0.3 + 0.5 + 0.6 + 0.9996 + 0.0) / 7
     assert r["mean_completion_pct"] == pytest.approx(100 * expected)
     assert r["first_div_ps"] == pytest.approx(3.0)  # the earliest divergence, at 0.3 of 10 ps
+
+
+def test_speed_matching_truncates_where_the_slower_setup_ran_out_of_time():
+    per = pd.DataFrame({"idx": [0, 1, 2], "nfs": [0.9996, 0.9, 0.2],
+                        "outcome": ["survived", "diverged", "diverged"]})
+    # the reference needed 0.45 s per step: 1800 s cover 4000 of 5000 steps (0.8)
+    ref = pd.DataFrame({"idx": [0, 1, 2], "seconds_per_step": [0.45, 0.45, 0.1],
+                        "target_steps": [5000, 5000, 5000]})
+    out = stability.speed_matched(per, ref)
+    assert list(out["outcome"]) == ["truncated", "truncated", "diverged"]
+    assert list(out["nfs"]) == pytest.approx([0.8, 0.8, 0.2])
 
 
 def test_neb_scores_only_converged_supported_hops(tmp_path):
