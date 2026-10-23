@@ -14,10 +14,10 @@ TRIM_FRACTION 0.05 of the weight off the upper tail, the winsorised mean clipped
 at the 0.99 quantile of all models pooled (the same absolute cap for every model,
 so no model gains from a longer tail), and the pooled mean kept alongside.
 
-The bulk / non-bulk / overcompressed labels are not re-derived here: they come
-from the ``domain`` column of the authors' published per-structure file, which is
-a function of the reference geometry alone and of no model's errors. Using their
-labels is what makes the bins identical to the paper's.
+The bulk / non-bulk / overcompressed labels come from the geometric descriptors
+in the authors' published per-structure file (see ``paper_domains``), which
+depend on the reference geometry alone and on no model's errors. Using their
+descriptors is what makes the bins identical to the paper's.
 """
 
 from __future__ import annotations
@@ -200,7 +200,22 @@ def _load_runs(dirs: list[str], labels: list[str]) -> dict[str, dict]:
     return runs
 
 
-def align(runs: dict[str, dict], domain_from: str | None) -> tuple[dict[str, dict], np.ndarray]:
+def paper_domains(run: dict) -> np.ndarray:
+    """The domains of the paper's tables, from the descriptors in the authors' file.
+
+    Their per-structure files store a domain from the evaluation-time detector
+    (dimensionality < 3 or more than one fragment), but the published tables
+    were built after relabelling with dimensionality alone ("dim"): 3,118
+    structures move from non-bulk to bulk. Overcompressed cells keep their stored
+    label. This reproduces their 242,319 / 80,766 / 11 split exactly.
+    """
+    stored = run["domain"].astype(str)
+    return np.where(stored == "overcompressed", "overcompressed",
+                    np.where(run["dim"] < 3, "non_bulk", "bulk"))
+
+
+def align(runs: dict[str, dict], domain_from: str | None,
+          rule: str = "paper") -> tuple[dict[str, dict], np.ndarray]:
     """Put every run on the sid order of the first one; return the domain labels."""
     labels = list(runs)
     order = runs[labels[0]]["sid"].astype(str)
@@ -218,6 +233,8 @@ def align(runs: dict[str, dict], domain_from: str | None) -> tuple[dict[str, dic
     if "domain" not in out[src]:
         raise ValueError(f"run {src} has no domain column; point --domain-from at the "
                          f"authors' per_structure.npz directory")
+    if rule == "paper":
+        return out, paper_domains(out[src])
     return out, out[src]["domain"].astype(str)
 
 
@@ -335,6 +352,8 @@ def add_arguments(p: argparse.ArgumentParser) -> None:
     p.add_argument("--labels", nargs="+", default=None)
     p.add_argument("--domain-from", default=None,
                    help="label whose per_structure.npz supplies the domain column")
+    p.add_argument("--domain-rule", default="paper", choices=["paper", "stored"],
+                   help="paper: relabel by dimensionality as the published tables do")
     p.add_argument("--dump-sids", default=None, metavar="PER_STRUCTURE_NPZ",
                    help="write the sid column of a per-structure file, one per line, to --out")
     p.add_argument("--compare", nargs=2, default=None, metavar=("OURS", "THEIRS"),
@@ -360,7 +379,7 @@ def run(args: argparse.Namespace) -> None:
         return
     if args.tables:
         labels = args.labels or [Path(d).name for d in args.tables]
-        runs, domain = align(_load_runs(args.tables, labels), args.domain_from)
+        runs, domain = align(_load_runs(args.tables, labels), args.domain_from, args.domain_rule)
         write_tables(tables(runs, domain), args.out or ".")
         return
 

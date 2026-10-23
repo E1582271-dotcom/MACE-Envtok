@@ -68,11 +68,24 @@ structures.
 
 ## Domains
 
-The bulk / non_bulk / overcompressed labels come from the `domain` column of the
-authors' published per-structure file and are not recomputed. Their labels depend
-only on the reference geometry (dimensionality and fragment detection, and a
-close-contact screen), never on a model's errors. Reusing them makes the bins
-identical to the paper's.
+The labels come from the geometric descriptors in the authors' published
+per-structure file. They depend only on the reference geometry, never on a
+model's errors.
+
+The stored `domain` column is not what the paper's tables use. It comes from the
+detector run at evaluation time, which counts a structure as non-bulk if its
+dimensionality is below 3 or it has more than one fragment. That gives
+239,201 / 83,884 / 11. The published tables were built after a relabelling by
+dimensionality alone; overcompressed cells keep their stored label. That moves
+3,118 structures to bulk and gives 242,319 / 80,766 / 11. `paper_domains`
+applies the same rule (`--domain-rule paper`, the default).
+
+Applied to the authors' own EnvTok file, this reproduces their published table
+to every digit:
+
+- bulk: 242,319 structures and 2,234,968 atoms;
+- bulk pooled force MAE: 148.5957 meV/Å;
+- bulk median per-structure force MAE: 112.61548 meV/Å.
 
 ## Validation before scoring our model
 
@@ -88,3 +101,21 @@ force MAE: MACE-OMAT-0 126.40 meV/Å, DIRECT 151.20 meV/Å, random seeds
 149.72–151.68 meV/Å.
 
 The whole run is `scripts/nscc/matpes.pbs`.
+
+## Outcome
+
+The run took 10 minutes on one A100: about 20 s to convert and build the graphs,
+and about 4 minutes to score each model.
+
+The rerun of the authors' EnvTok model (`results/matpes/rerun_check.json`)
+matches their published file:
+
+- same 3,011,678 atoms in the same order, and identical reference forces;
+- median |Δ per-atom error| of 1.5e-6 eV/Å; 99.99 % of atoms within 2.2e-3 eV/Å;
+- the only larger differences are 134 atoms in non-bulk structures where the
+  model's own error is about 5,700 eV/Å; float32 rounding does not survive there;
+- table values equal to the published ones at the printed precision.
+
+The tables for all models are in `results/matpes/tables/`, one CSV per quantity
+and domain. The `winsor_mean` cap is pooled over all models in a table, so adding
+models moves it slightly; the published numbers use the paper's seven models.

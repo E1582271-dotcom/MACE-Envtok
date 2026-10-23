@@ -1,11 +1,58 @@
-# EnvTok-MACE
+# MACE-Envtok
 
 A from-scratch PyTorch implementation of the MACE equivariant interatomic potential,
 trained with multi-node DDP on the EnvTok subset of OMat24 (795,721 structures,
 about 6.6M atoms), following Moerman et al., *Atoms that Matter* (arXiv:2610.14392).
 
-**Status:** work in progress. The model and the training stack are implemented and
-tested; training on NSCC ASPIRE 2A is being set up. See [docs/PLAN.md](docs/PLAN.md).
+**Status:** the model is trained and evaluated on OMat24 validation data and on
+MatPES. MatCalc, MD-stability and Li-ion migration benchmarks are next
+([docs/PLAN.md](docs/PLAN.md)).
+
+## Results
+
+Trained from random initialisation on 8 A100 GPUs, each on a different node of
+NSCC ASPIRE 2A. The run stopped early at epoch 696 after 22 h of wall-clock time,
+about 176 GPU-hours. The comparison models are the authors' released ones.
+
+**OMat24 validation, in distribution.** These 591,981 frames were used neither
+for training nor for model selection. MAE in meV/atom, meV/Å and meV/Å³.
+
+| Model | Training data | Energy | Force | Stress |
+|---|---|---|---|---|
+| **This repository, EnvTok subset** | 795,721 structures | **24.59** | **109.4** | **2.879** |
+| Authors, EnvTok subset | same | 25.47 | 112.1 | 2.946 |
+| Authors, random subsets (4 seeds) | same size | 26.69 ± 0.17 | 116.8 ± 0.7 | 3.08 |
+| Authors, DIRECT subset | same size | 28.67 | 118.6 | 3.125 |
+| MACE-OMAT-0 | all of OMat24 | 17.47 | 84.5 | 2.577 |
+
+The authors selected their models on the full validation set, which contains
+these frames, so this comparison favours them.
+
+**MatPES PBE 2025.2, out of distribution.** These are 323,096 structures from a
+different dataset, binned as in the paper. Per-structure force MAE in meV/Å,
+given as median / pooled mean.
+
+| Model | Bulk (242,319) | Non-bulk (80,766) |
+|---|---|---|
+| **This repository** | **110.1** / **143.3** | 240.4 / 320.8 |
+| Authors, EnvTok | 112.6 / 148.6 | 251.7 / 3,904 |
+| Authors, random (4 seeds) | 114.2–115.9 / 149.7–151.7 | 246.2–254.6 / 1,126–137,634 |
+| Authors, DIRECT | 119.3 / 151.2 | 228.7 / 327.1 |
+| MACE-OMAT-0 | 83.6 / 126.4 | 158.9 / 275.4 |
+
+Rescoring the authors' EnvTok model with this pipeline reproduces their
+published per-atom errors. The median difference is 1.5e-6 eV/Å, and their
+table values are recovered to every printed digit
+([docs/MATPES.md](docs/MATPES.md)).
+
+The pooled non-bulk mean is set by a few structures where a model's force error
+explodes. Atoms with errors above 10 eV/Å: 4,693 for the authors' EnvTok model,
+1,481 here. Across the four random seeds, the same mean varies more than
+100-fold, so the medians are the comparable numbers.
+
+Each subset has one training run here and one from the authors. The gap to their
+EnvTok model is larger than the spread of their random-subset seeds, but one run
+on each side is not enough to explain it.
 
 ## What is implemented here
 
@@ -36,7 +83,7 @@ as a reference in the tests.
 ## Quick start (CPU)
 
 ```bash
-uv sync                       # Python 3.12, torch 2.5.1, e3nn 0.4.4, mace-torch (tests only)
+uv sync                       # Python 3.12, torch 2.7.1, e3nn 0.4.4, mace-torch (tests only)
 uv run pytest                 # unit, parity and distributed tests
 uv run envtok-mace train --config configs/train/debug_cpu.yaml   # tiny end-to-end run
 ```
@@ -49,7 +96,9 @@ Training data are not redistributed. The subset is rebuilt from
 [OMat24](https://huggingface.co/datasets/facebook/OMAT24) (CC BY 4.0) using the
 structure IDs published by the authors on
 [Zenodo](https://doi.org/10.5281/zenodo.23137852). `tests/fixtures/` holds 40
-OMat24 validation structures for the tests.
+OMat24 validation structures for the tests. The MatPES test set is rebuilt from
+the [MatPES](https://huggingface.co/datasets/materialyze/matpes) release with
+`scripts/data/download_matpes.sh` and `envtok-mace matpes-build`.
 
 ## References
 
@@ -60,6 +109,8 @@ OMat24 validation structures for the tests.
   for Fast and Accurate Force Fields.* NeurIPS 2022. Code: https://github.com/ACEsuit/mace
 - L. Barroso-Luque et al. *Open Materials 2024 (OMat24) Inorganic Materials Dataset
   and Models.* arXiv:2410.12771 (2024).
+- A. D. Kaplan et al. *A Foundational Potential Energy Surface Dataset for
+  Materials (MatPES).* arXiv:2503.04070 (2025).
 
 ## License
 

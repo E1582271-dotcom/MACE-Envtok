@@ -107,7 +107,7 @@ def test_tables_use_the_reference_domains_and_atom_weights():
            "f_mae_comp": np.array([1.0, 3.0, 10.0])}
     ours = {"sid": sid[::-1], "natoms": natoms[::-1],
             "f_mae_comp": np.array([10.0, 3.0, 1.0])}  # same values, reversed order
-    runs, domain = bench.align({"theirs": ref, "ours": ours}, domain_from="theirs")
+    runs, domain = bench.align({"theirs": ref, "ours": ours}, domain_from="theirs", rule="stored")
     assert list(runs["ours"]["f_mae_comp"]) == [1.0, 3.0, 10.0]
     out = bench.tables(runs, domain)
     bulk = out["metrics"]["f_mae_comp"]["domains"]["bulk"]["estimators"]
@@ -116,6 +116,13 @@ def test_tables_use_the_reference_domains_and_atom_weights():
     # atom-weighted: the 98-atom structure dominates the pooled mean
     assert allrows["pooled_mean_MAE"]["ours"] == pytest.approx((1 + 3 + 98 * 10) / 100)
     assert out["metrics"]["f_mae_comp"]["domains"]["non_bulk"]["n"] == 1
+
+
+def test_paper_domains_relabel_by_dimensionality_only():
+    """Fragmented but 3D-periodic cells count as bulk; overcompressed keeps its label."""
+    run = {"domain": np.array(["bulk", "non_bulk", "non_bulk", "overcompressed"]),
+           "dim": np.array([3, 3, 2, 1])}
+    assert list(bench.paper_domains(run)) == ["bulk", "bulk", "non_bulk", "overcompressed"]
 
 
 # ---------------------------------------------------------------------- scoring

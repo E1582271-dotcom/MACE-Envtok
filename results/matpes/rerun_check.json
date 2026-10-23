@@ -1,0 +1,45 @@
+{
+  "what": "authors' released EnvTok model rescored with this pipeline vs the authors' published per-atom file",
+  "atom_level": {
+    "n_structures": 323096,
+    "n_atoms": 3011678,
+    "atom_order_matches": true,
+    "max_abs_d_ref_norm_eV_per_A": 0.0,
+    "max_abs_d_err_norm_eV_per_A": 3.6953125,
+    "median_rel_d_err_norm": 6.87136434862623e-06,
+    "q999_rel_d_err_norm": 1.8393275737762451
+  },
+  "atoms_with_abs_d_err_norm_above": {
+    "1e-3": 472,
+    "1e-2": 134,
+    "1e-1": 25,
+    "1": 2
+  },
+  "where_the_differences_are": "all 134 atoms above 1e-2 eV/A are in non-bulk structures where the model's own error is thousands of eV/A (median 5703 eV/A)",
+  "atoms_with_error_above_10_eV_per_A": {
+    "authors_file": 4693,
+    "authors_rerun": 4693,
+    "ours": 1481
+  },
+  "bulk_force_mae_meV_per_A": {
+    "authors_file": {
+      "pooled": 148.6,
+      "median": 112.615
+    },
+    "authors_rerun": {
+      "pooled": 148.6,
+      "median": 112.616
+    }
+  },
+  "non_bulk_force_mae_meV_per_A": {
+    "authors_file": {
+      "pooled": 3904.32,
+      "median": 251.671
+    },
+    "authors_rerun": {
+      "pooled": 3904.33,
+      "median": 251.671
+    }
+  },
+  "dtype": "float32, cuEquivariance backend"
+}
