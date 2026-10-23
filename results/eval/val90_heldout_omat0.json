@@ -1,0 +1,17 @@
+{
+  "frames": "${ENVTOK_DATA}/omat24_val_90pct_heldout.h5",
+  "n_frames": 591981,
+  "dtype": "float32",
+  "results": {
+    "mace_omat0": {
+      "model": "local/models/mace-omat-0-medium.model",
+      "loss": 0.008165059611201286,
+      "energy_mae_meV_per_atom": 17.47324014337178,
+      "energy_rmse_meV_per_atom": 212.74773556941327,
+      "force_mae_meV_per_A": 84.5366273154594,
+      "force_rmse_meV_per_A": 289.8153409820767,
+      "stress_mae_meV_per_A3": 2.5774955987521846,
+      "n_structures": 591981
+    }
+  }
+}

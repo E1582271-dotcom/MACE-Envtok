@@ -1,0 +1,81 @@
+{
+  "frames": "${ENVTOK_DATA}/omat24_val_90pct_heldout.h5",
+  "n_frames": 591981,
+  "dtype": "float32",
+  "results": {
+    "ours_envtok": {
+      "model": "${HOME}/envtok_runs/envtok_8gpu/best.pt",
+      "loss": 0.010658809915184975,
+      "energy_mae_meV_per_atom": 24.59003885164226,
+      "energy_rmse_meV_per_atom": 215.06215270725883,
+      "force_mae_meV_per_A": 109.36953934625002,
+      "force_rmse_meV_per_A": 433.8047949381591,
+      "stress_mae_meV_per_A3": 2.8786471610761786,
+      "n_structures": 591981
+    },
+    "authors_envtok": {
+      "model": "local/zenodo/models/models/6.5M-atoms/mace-subset-2nd_gen_chemenv_v14_T100_a1_suppm-omat-medium-be1024_universal_loss_dft_e0s_use_stress_delta_0.01_lr_0.001_rb10_run-1.model",
+      "loss": 0.010938609018921852,
+      "energy_mae_meV_per_atom": 25.467068689855033,
+      "energy_rmse_meV_per_atom": 216.52711290410878,
+      "force_mae_meV_per_A": 112.10179563963543,
+      "force_rmse_meV_per_A": 443.8664094069364,
+      "stress_mae_meV_per_A3": 2.945844239064695,
+      "n_structures": 591981
+    },
+    "authors_direct": {
+      "model": "local/zenodo/models/models/6.5M-atoms/mace-subset-v2_DIRECT_460k-omat-medium-be1024_universal_loss_dft_e0s_use_stress_delta_0.01_lr_0.001_rb10_run-1.model",
+      "loss": 0.011648952029645443,
+      "energy_mae_meV_per_atom": 28.66898508843214,
+      "energy_rmse_meV_per_atom": 215.53235668807199,
+      "force_mae_meV_per_A": 118.58008773696373,
+      "force_rmse_meV_per_A": 439.77808120832674,
+      "stress_mae_meV_per_A3": 3.1250555962191053,
+      "n_structures": 591981
+    },
+    "authors_rdm1": {
+      "model": "local/zenodo/models/models/6.5M-atoms/mace-subset-2nd_gen_chemenv_rdm1_356kmat-omat-medium-be1024_universal_loss_dft_e0s_use_stress_delta_0.01_lr_0.001_rb10_run-1.model",
+      "loss": 0.011451801285147667,
+      "energy_mae_meV_per_atom": 26.6390423046949,
+      "energy_rmse_meV_per_atom": 220.03340091305392,
+      "force_mae_meV_per_A": 117.34974004528871,
+      "force_rmse_meV_per_A": 1258.0204246630049,
+      "stress_mae_meV_per_A3": 3.093947762921825,
+      "n_structures": 591981
+    },
+    "authors_rdm2": {
+      "model": "local/zenodo/models/models/6.5M-atoms/mace-subset-2nd_gen_chemenv_rdm2_356kmat-omat-medium-be1024_universal_loss_dft_e0s_use_stress_delta_0.01_lr_0.001_rb10_run-1.model",
+      "loss": 0.011339746415615082,
+      "energy_mae_meV_per_atom": 26.501252159436255,
+      "energy_rmse_meV_per_atom": 223.8382983701355,
+      "force_mae_meV_per_A": 116.51111438643932,
+      "force_rmse_meV_per_A": 871.0429644457219,
+      "stress_mae_meV_per_A3": 3.074580730376914,
+      "n_structures": 591981
+    },
+    "authors_rdm3": {
+      "model": "local/zenodo/models/models/6.5M-atoms/mace-subset-2nd_gen_chemenv_rdm3_356kmat-omat-medium-be1024_universal_loss_dft_e0s_use_stress_delta_0.01_lr_0.001_rb10_run-1.model",
+      "loss": 0.011263376101851463,
+      "energy_mae_meV_per_atom": 26.913108456398955,
+      "energy_rmse_meV_per_atom": 223.94019032393558,
+      "force_mae_meV_per_A": 115.90323401075024,
+      "force_rmse_meV_per_A": 717.1357792118567,
+      "stress_mae_meV_per_A3": 3.063181565138894,
+      "n_structures": 591981
+    },
+    "authors_rdm4": {
+      "model": "local/zenodo/models/models/6.5M-atoms/mace-subset-2nd_gen_chemenv_rdm4_356kmat-omat-medium-be1024_universal_loss_dft_e0s_use_stress_delta_0.01_lr_0.001_rb10_run-1.model",
+      "loss": 0.01145399734377861,
+      "energy_mae_meV_per_atom": 26.6862114655258,
+      "energy_rmse_meV_per_atom": 221.5136973501026,
+      "force_mae_meV_per_A": 117.41254868176127,
+      "force_rmse_meV_per_A": 871.546122790758,
+      "stress_mae_meV_per_A3": 3.106189299211904,
+      "n_structures": 591981
+    },
+    "mace_omat0": {
+      "model": "local/models/mace-omat-0-medium.model",
+      "error": "ValueError('constant radial.covalent_radii differs from radial_embedding.distance_transform.covalent_radii beyond rounding')"
+    }
+  }
+}

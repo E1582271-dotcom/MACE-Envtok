@@ -1,0 +1,22 @@
+{
+  "job": "NSCC ASPIRE 2A, 8 x A100-SXM4-40GB as 8 one-GPU chunks on 7 nodes (2+1+1+1+1+1+1), torch 2.7.1, cuEquivariance 0.8.1 backend, float32",
+  "data": "EnvTok training set (795,721 structures, 8.25 atoms and 334 edges per structure on average), 128 structures per GPU per step",
+  "gpu_backend_check": {"cueq_vs_e3nn_fp32_force_rel": 3.9e-08, "cueq_vs_e3nn_fp32_stress_rel": 5.7e-07, "cueq_vs_e3nn_fp64_rel_max": 2.9e-10},
+  "allreduce_bus_GBps": {"2_ranks_same_node_nvlink": {"27MB": 57.4, "128MB": 62.9},
+                         "8_ranks_7_nodes_tcp_hsn": {"27MB": 1.79, "128MB": 1.64}, "27MB_8_ranks_ms": 26.4},
+  "transport_note": "NCCL over TCP sockets on hsn0/hsn1 (NCCL_IB_DISABLE=1); the RoCE NICs do not connect across nodes",
+  "scaling_steady_state": [
+    {"gpus": 1, "nodes": 1, "structures_per_s": 1420, "seconds_per_step": 0.090, "efficiency": 1.00},
+    {"gpus": 2, "nodes": 1, "structures_per_s": 2580, "seconds_per_step": 0.097, "efficiency": 0.91},
+    {"gpus": 4, "nodes": 3, "structures_per_s": 4310, "seconds_per_step": 0.119, "efficiency": 0.76},
+    {"gpus": 8, "nodes": 7, "structures_per_s": 8300, "seconds_per_step": 0.123, "efficiency": 0.73}
+  ],
+  "equivalence_after_20_steps_global_batch_1024": {
+    "8gpu_x1_vs_1gpu_x8_accumulation": {"val_loss": [0.13346745073795319, 0.13346745073795319],
+                                        "max_abs_param_diff": 2.384e-07, "max_rel_param_diff": 1.542e-08},
+    "elastic_8gpu_10_steps_then_4gpu_to_20_vs_8gpu": {"val_loss_equal": true,
+                                        "max_abs_param_diff": 2.384e-07, "max_rel_param_diff": 1.683e-08}
+  },
+  "projection_main_run": {"seconds_per_epoch": "100-105 (777 steps + validation on 65,775 structures)",
+                          "wall_hours_832_epochs": "23-24", "gpu_hours_832_epochs": "~190"}
+}
