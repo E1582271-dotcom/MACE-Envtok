@@ -10,6 +10,8 @@ COMMANDS = {
     "extract": ("envtok_mace.data.extract_subset", "pull structures out of OMat24 ASE-LMDB files"),
     "preprocess": ("envtok_mace.data.preprocess", "add neighbour lists to a Frames file"),
     "subset": ("envtok_mace.data.subset", "write a stratified random subset of a Frames file"),
+    "matpes-build": ("envtok_mace.data.matpes", "convert the MatPES release into a Frames file"),
+    "matpes": ("envtok_mace.bench.matpes", "score a model on MatPES and build the paper's tables"),
     "ref-eval": ("envtok_mace.eval.reference", "evaluate a reference mace-torch model on a Frames file"),
     "train": ("envtok_mace.train.run", "train a model (one process per GPU)"),
     "eval": ("envtok_mace.eval.run_eval", "score checkpoints / mace-torch models on a Frames file"),

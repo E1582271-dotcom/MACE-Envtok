@@ -1,0 +1,45 @@
+#!/bin/bash
+# MatPES benchmark, end to end on one GPU node:
+#   1. take the authors' 323,096 test sids from their published per-structure file,
+#   2. convert the release to Frames and add neighbour lists (skipped if present),
+#   3. score each model and write per_structure.npz / per_atom_forces.npz,
+#   4. build the paper's tables for these models next to the authors' own files.
+# Download the release first on the login node: bash scripts/data/download_matpes.sh
+#   qsub -P <project> -v MODELS="best.pt a.model",LABELS="ours authors_envtok_rerun" scripts/nscc/matpes.pbs
+#PBS -N envtok-matpes
+#PBS -q normal
+#PBS -l select=1:ncpus=16:ngpus=1:mem=110gb
+#PBS -l walltime=02:00:01
+#PBS -j oe
+set -euo pipefail
+cd "${PBS_O_WORKDIR:-$PWD}"
+. scripts/nscc/env.sh
+: "${MODELS:?}" "${LABELS:?}"
+
+AUTH=${AUTH:-$ENVTOK_SCRATCH/zenodo/benchmarks_matpes/benchmarks/matpes}
+SRC=${SRC:-$ENVTOK_SCRATCH/matpes/MatPES-PBE-2025.2.jsonl}
+FRAMES=${FRAMES:-$ENVTOK_DATA/matpes_test.h5}
+OUT=${OUT:-$ENVTOK_SCRATCH/matpes_runs}
+NW=${NW:-15}
+mkdir -p "$OUT"
+
+if [ ! -f "$FRAMES" ]; then
+    envtok-mace matpes --dump-sids "$AUTH/EnvTok/per_structure.npz" --out "$OUT/test_sids.txt"
+    envtok-mace matpes-build --src "$SRC" --sids "$OUT/test_sids.txt" --expect \
+        --dst "$OUT/matpes_test_frames.h5" --workers "$NW"
+    envtok-mace preprocess --src "$OUT/matpes_test_frames.h5" --dst "$FRAMES" --workers "$NW"
+fi
+
+read -r -a models <<< "$MODELS"
+read -r -a labels <<< "$LABELS"
+for i in "${!models[@]}"; do
+    envtok-mace matpes --frames "$FRAMES" --model "${models[$i]}" --out "$OUT/${labels[$i]}" \
+        --dtype "${DTYPE:-float32}" ${BACKEND:+--backend $BACKEND}
+done
+
+# The authors' files define the domains and are tabled alongside ours.
+TABLE_DIRS="$AUTH/EnvTok $AUTH/DIRECT $AUTH/rdm/seed_1 $AUTH/rdm/seed_2 $AUTH/rdm/seed_3 $AUTH/rdm/seed_4 $AUTH/MACE-OMAT-0"
+TABLE_LABELS="authors_envtok authors_direct rdm1 rdm2 rdm3 rdm4 mace_omat0"
+for L in "${labels[@]}"; do TABLE_DIRS="$TABLE_DIRS $OUT/$L"; TABLE_LABELS="$TABLE_LABELS $L"; done
+envtok-mace matpes --tables $TABLE_DIRS --labels $TABLE_LABELS --domain-from authors_envtok \
+    --out "$OUT/tables"
