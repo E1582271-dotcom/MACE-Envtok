@@ -98,8 +98,14 @@ class MACE(nn.Module):
 
     # ------------------------------------------------------------------ helpers
     def species_index(self, numbers: torch.Tensor) -> torch.Tensor:
-        """Map atomic numbers to rows of the element table."""
-        lookup = torch.full((int(self.z_table.max()) + 1,), -1, dtype=torch.long, device=numbers.device)
+        """Map atomic numbers to rows of the element table.
+
+        The lookup covers every element (Z <= 118), so an atomic number outside the
+        table maps to -1 and raises below. A table only as long as the largest
+        supported Z would let Z >= 84 index past its end, which on a GPU is a
+        device-side assertion that leaves the process unable to use CUDA.
+        """
+        lookup = torch.full((119,), -1, dtype=torch.long, device=numbers.device)
         lookup[self.z_table] = torch.arange(len(self.z_table), device=numbers.device)
         idx = lookup[numbers]
         if (idx < 0).any():

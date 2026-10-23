@@ -107,3 +107,12 @@ def test_batched_equals_single(model, val40):
     a0, a1 = batch.natoms[:2].tolist()
     single1 = model(collate(val40, [1]).to(dtype=torch.float64))
     torch.testing.assert_close(out["forces"][a0:a0 + a1], single1["forces"], rtol=1e-10, atol=1e-12)
+
+
+@pytest.mark.parametrize("z", [57, 84, 92, 118])
+def test_elements_outside_the_table_raise_cleanly(model, z):
+    """Lanthanides map to -1 inside the table; Z >= 84 lies past the largest supported
+    element and must not index out of bounds (a device assertion on a GPU)."""
+    numbers = torch.tensor([14, z])
+    with pytest.raises(ValueError, match="outside the model's element table"):
+        model.species_index(numbers)

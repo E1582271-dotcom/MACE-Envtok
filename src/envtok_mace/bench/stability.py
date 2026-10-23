@@ -168,7 +168,11 @@ def trajectory_frames(path: Path):
     import pandas as pd
     from ase.io import read
 
-    traj = read(path, index=":")
+    try:
+        traj = read(path, index=":")
+    except Exception as exc:  # e.g. an empty file from a run that never took a step
+        print(f"skipping {path.name}: {exc}")
+        return None
     steps, temps, restarts, times = [], [], [], []
     for atoms in traj:
         try:
