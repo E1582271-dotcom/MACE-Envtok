@@ -1,0 +1,18 @@
+# Tiny CPU run on the test fixture: checks that the whole loop works end to end.
+train_file: tests/fixtures/omat24_val_40.h5
+val_file: tests/fixtures/omat24_val_40.h5
+out_dir: local/runs/debug_cpu
+run_name: debug_cpu
+device: cpu
+dtype: float64
+num_workers: 0
+batch_size: 4
+accumulation: 2
+val_batch_size: 8
+val_fraction: 1.0
+max_epochs: 3
+patience: 40
+log_every: 2
+model:
+  num_channels: 16
+  radial_mlp: [16, 16]

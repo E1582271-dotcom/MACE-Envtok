@@ -1,0 +1,24 @@
+# Main run: the paper's recipe, global batch 1024 = 128 structures per GPU x 8 GPUs
+# (on fewer GPUs the gradient accumulation makes up the difference).
+train_file: ${ENVTOK_DATA}/envtok_train.h5
+val_file: ${ENVTOK_DATA}/omat24_val_10pct.h5   # fixed stratified 10% (envtok-mace subset)
+out_dir: ${ENVTOK_SCRATCH}/runs/envtok_8gpu
+run_name: envtok_8gpu
+device: cuda
+dtype: float32
+num_workers: 8
+batch_size: 128
+global_batch: 1024
+val_batch_size: 64
+val_fraction: 1.0
+max_epochs: 1000
+patience: 40
+seed: 1
+log_every: 50
+archive_every: 25
+walltime_margin_seconds: 1200
+use_wandb: true
+loss: {energy_weight: 1.0, forces_weight: 10.0, stress_weight: 10.0, huber_delta: 0.01}
+optim: {lr: 1.0e-3, weight_decay: 1.0e-6, amsgrad: true, clip_grad: 100.0, ema_decay: 0.999,
+        lr_factor: 0.8, scheduler_patience: 5}
+model: {backend: cueq}
