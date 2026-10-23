@@ -1,0 +1,14 @@
+#!/bin/bash
+# Score checkpoints and published models on a Frames file with the training metrics (1 GPU).
+#   qsub -P <project> -v MODELS="a.pt b.model",LABELS="ours authors",FRAMES=...,OUT=... scripts/nscc/eval.pbs
+#PBS -N envtok-eval
+#PBS -q normal
+#PBS -l select=1:ncpus=16:ngpus=1:mem=110gb
+#PBS -l walltime=02:00:01
+#PBS -j oe
+set -euo pipefail
+cd "${PBS_O_WORKDIR:-$PWD}"
+. scripts/nscc/env.sh
+: "${MODELS:?}" "${FRAMES:?}" "${OUT:?}"
+envtok-mace eval --models $MODELS ${LABELS:+--labels $LABELS} --frames "$FRAMES" --out "$OUT" \
+    --dtype ${DTYPE:-float32} ${N:+--n $N} ${BACKEND:+--backend $BACKEND}

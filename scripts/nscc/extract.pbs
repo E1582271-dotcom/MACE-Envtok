@@ -1,0 +1,32 @@
+#!/bin/bash
+# Build the training set (EnvTok IDs) and the validation set from raw OMat24,
+# then add neighbour lists. CPU only.
+#   qsub -P <project> scripts/nscc/extract.pbs        (project from your .env)
+#PBS -N envtok-extract
+#PBS -q normal
+#PBS -l select=1:ncpus=128:mem=440gb
+#PBS -l walltime=06:00:00
+#PBS -j oe
+set -euo pipefail
+cd "${PBS_O_WORKDIR:-$PWD}"
+. scripts/nscc/env.sh
+
+RAW=$ENVTOK_SCRATCH/raw/omat24
+IDS=$(ls "$REPO_DIR"/local/zenodo/subsets/subsets/best_subset_*_topup.txt)
+OUT=$ENVTOK_DATA
+mkdir -p "$OUT"
+NW=${NW:-120}
+
+envtok-mace extract --omat-dir "$RAW/train" --ids "$IDS" --expect 795721 \
+    --out "$OUT/envtok_train_frames.h5" --workers "$NW"
+envtok-mace extract --omat-dir "$RAW/val" --expect 657756 \
+    --out "$OUT/omat24_val_frames.h5" --workers "$NW"
+envtok-mace preprocess --src "$OUT/envtok_train_frames.h5" --dst "$OUT/envtok_train.h5" --workers "$NW"
+envtok-mace preprocess --src "$OUT/omat24_val_frames.h5" --dst "$OUT/omat24_val.h5" --workers "$NW"
+python - "$OUT/envtok_train.h5" <<'PY'
+import sys, h5py
+with h5py.File(sys.argv[1]) as h:
+    nb = h.attrs["avg_num_neighbors"]
+print(f"avg_num_neighbors = {nb:.4f} (authors' log: 40.5113)")
+assert abs(nb - 40.5113) < 1e-3, "neighbour lists differ from the authors' preprocessing"
+PY

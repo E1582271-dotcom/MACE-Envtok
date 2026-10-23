@@ -1,0 +1,81 @@
+#!/bin/bash
+# M3 pilot on 8 A100s from any nodes: GPU backend check, NCCL bandwidth,
+# 1/2/4/8-GPU scaling, 8-GPU vs 1-GPU equivalence, and resuming 8 -> 4 GPUs.
+# Every step logs to $OUT/<step>.log as it runs and has a time limit.
+#   qsub -P <project> scripts/nscc/pilot_8gpu.pbs
+#PBS -N envtok-pilot
+#PBS -q normal
+#PBS -l select=8:ngpus=1:ncpus=16:mem=110gb:mpiprocs=1
+#PBS -l place=free
+#PBS -l walltime=02:00:01
+#PBS -j oe
+set -uo pipefail
+cd "${PBS_O_WORKDIR:-$PWD}"
+. scripts/nscc/env.sh
+. scripts/nscc/ranks_env.sh
+export NCCL_SOCKET_IFNAME=${NCCL_SOCKET_IFNAME:-hsn} TORCH_NCCL_ASYNC_ERROR_HANDLING=1 OMP_NUM_THREADS=4
+export ENVTOK_PG_TIMEOUT_MIN=5   # a hung step fails after 5 minutes instead of 30
+OUT=$ENVTOK_SCRATCH/runs/pilot_${PBS_JOBID%%.*}
+mkdir -p "$OUT"
+CFG=configs/train/pilot_8gpu.yaml
+ranks_layout
+{ echo "allocation: $NRANKS GPUs: $(cut -d. -f1 "$PBS_NODEFILE" | sort | uniq -c | tr '\n' ' ')"
+  for n in ${RANK_HOSTS//,/ }; do echo "$n: $(getent hosts "$n")"; done
+  ip -4 -o addr show | awk '{print $2, $4}'
+  echo "-- GPUs seen by a pbsdsh task on each node (should be only this job's):"
+  idx=0; seen=","
+  while read -r line; do
+      h=${line%%.*}
+      case "$seen" in *",$h,"*) ;; *) seen="$seen$h,"
+          pbsdsh -n "$idx" -- /bin/bash -c "echo \"\$(hostname -s): CUDA_VISIBLE_DEVICES=\$CUDA_VISIBLE_DEVICES; \$(nvidia-smi -L | wc -l) GPU(s)\" >> $OUT/00_gpus.log" ;; esac
+      idx=$((idx + 1))
+  done < "$PBS_NODEFILE"; } > "$OUT/00_layout.log" 2>&1
+
+first_k() {  # rank layout restricted to the first k GPUs of the allocation
+    head -n "$1" "$PBS_NODEFILE" > "$OUT/nodes_$1"
+    ranks_layout "$OUT/nodes_$1"
+    PBS_NODEFILE_SUB="$OUT/nodes_$1"
+}
+run_k() {  # run_k <k> <port> <minutes> <log> <command...>
+    local k=$1 port=$2 minutes=$3 log=$4; shift 4
+    first_k "$k"
+    ( export PBS_NODEFILE="$PBS_NODEFILE_SUB" MASTER_PORT=$port RANK_LOG="$OUT/${log%.log}"
+      RUN_TIMEOUT="${minutes}m" run_ranks "$@" ) > "$OUT/$log" 2>&1
+    echo "$log: exit $?" >> "$OUT/status.log"
+}
+
+timeout 10m envtok-mace check-backends --frames "$ENVTOK_DATA/omat24_val_10pct.h5" --n 64 > "$OUT/01_backends.log" 2>&1
+echo "01_backends.log: exit $?" >> "$OUT/status.log"
+
+# Transport: TCP sockets over both Slingshot interfaces (hsn0, hsn1). NCCL would
+# otherwise pick the nodes' RoCE NICs, which fail to connect across nodes here.
+export NCCL_IB_DISABLE=1
+NCCL_DEBUG=INFO run_k 2 29510 4 02_allreduce_2.log envtok-mace bench-allreduce
+NCCL_DEBUG=INFO run_k 8 29511 5 03_allreduce_8.log envtok-mace bench-allreduce
+
+for n in 1 2 4 8; do
+    run_k "$n" $((29520 + n)) 15 "10_scale_$n.log" envtok-mace train --config "$CFG" \
+        --set out_dir="$OUT/scale_$n" max_steps=60 global_batch=null accumulation=1
+done
+
+run_k 8 29540 12 20_eq_w8.log envtok-mace train --config "$CFG" --set out_dir="$OUT/eq_w8" max_steps=20
+run_k 1 29541 15 21_eq_w1.log envtok-mace train --config "$CFG" --set out_dir="$OUT/eq_w1" max_steps=20
+run_k 8 29550 12 22_el_a.log envtok-mace train --config "$CFG" --set out_dir="$OUT/el" max_steps=20 interrupt_after_steps=10
+run_k 4 29551 12 23_el_b.log envtok-mace train --config "$CFG" --set out_dir="$OUT/el" max_steps=20
+
+python - "$OUT" > "$OUT/30_compare.log" 2>&1 <<'PY'
+import sys, torch
+def load(name):
+    return torch.load(f"{sys.argv[1]}/{name}/last.pt", map_location="cpu", weights_only=False)
+ref = load("eq_w8")
+keys = [k for k, v in ref["model"].items() if v.is_floating_point() and v.numel() > 0]
+scale = max(ref["model"][k].abs().max().item() for k in keys)
+for name in ("eq_w1", "el"):
+    other = load(name)
+    d = max((ref["model"][k] - other["model"][k]).abs().max().item() for k in keys)
+    rel = max(((ref["model"][k] - other["model"][k]).norm() / ref["model"][k].norm().clamp_min(1e-30)).item()
+              for k in keys)
+    print(f"{name}: step {other['global_step']}, world {other['world_size']}, max abs diff {d:.3e}, "
+          f"max per-tensor relative diff {rel:.3e} (max abs param {scale:.3e})")
+PY
+cat "$OUT/status.log"

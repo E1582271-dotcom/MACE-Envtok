@@ -1,0 +1,17 @@
+#!/bin/bash
+# Training-step throughput on one A100: ours vs mace-torch (e3nn and cuEquivariance).
+#   qsub -P <project> -v FRAMES=<graphs.h5> scripts/nscc/bench_speed.pbs
+#PBS -N envtok-speed
+#PBS -q normal
+#PBS -l select=1:ncpus=16:ngpus=1:mem=110gb
+#PBS -l walltime=01:00:00
+#PBS -j oe
+set -euo pipefail
+cd "${PBS_O_WORKDIR:-$PWD}"
+. scripts/nscc/env.sh
+: "${FRAMES:?qsub -v FRAMES=...}"
+nvidia-smi --query-gpu=name,driver_version --format=csv
+for bs in ${BATCH_SIZES:-128 64}; do
+    envtok-mace bench-speed --frames "$FRAMES" --impl ${IMPLS:-ours ours-cueq mace-e3nn mace-cueq} \
+        --batch-size "$bs" --steps ${STEPS:-50} --warmup 10 ${PROFILE:+--profile}
+done

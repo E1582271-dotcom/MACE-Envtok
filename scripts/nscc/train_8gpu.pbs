@@ -1,0 +1,32 @@
+#!/bin/bash
+# Data-parallel training on 8 A100s taken from any nodes with free GPUs
+# (8 chunks of 1 GPU; several may land on the same node). One process per GPU.
+#   qsub -P <project> -v CONFIG=configs/train/envtok_8gpu.yaml scripts/nscc/train_8gpu.pbs
+# Fewer GPUs work too (e.g. -l select=4:...): with global_batch in the config the
+# gradient accumulation adapts and the run stays the same; chain.sh submits restarts.
+#PBS -N envtok-train
+#PBS -q normal
+#PBS -l select=8:ngpus=1:ncpus=16:mem=110gb:mpiprocs=1
+#PBS -l place=free
+#PBS -l walltime=02:00:01
+#PBS -j oe
+set -euo pipefail
+cd "${PBS_O_WORKDIR:-$PWD}"
+. scripts/nscc/env.sh
+. scripts/nscc/ranks_env.sh
+: "${CONFIG:?pass the training config with qsub -v CONFIG=...}"
+ranks_layout
+export MASTER_PORT=${MASTER_PORT:-29500}
+export NCCL_SOCKET_IFNAME=${NCCL_SOCKET_IFNAME:-hsn}
+export NCCL_IB_DISABLE=${NCCL_IB_DISABLE:-1}   # RoCE NICs do not connect across nodes; use TCP over hsn*
+export NCCL_DEBUG=${NCCL_DEBUG:-WARN}
+export TORCH_NCCL_ASYNC_ERROR_HANDLING=1
+export OMP_NUM_THREADS=${OMP_NUM_THREADS:-4}
+# walltime of this job, so the trainer can checkpoint and exit before it is killed
+export ENVTOK_WALLTIME=$(qstat -f "$PBS_JOBID" | awk '/Resource_List.walltime/ {print $3}')
+
+echo "job $PBS_JOBID: $NRANKS GPUs on $RANK_NNODES node(s) ($RANK_HOSTS), master $MASTER_ADDR, walltime $ENVTOK_WALLTIME"
+export RANK_LOG=$ENVTOK_SCRATCH/runs/logs/${PBS_JOBID%%.*}
+mkdir -p "$(dirname "$RANK_LOG")"
+echo "per-node output: $RANK_LOG.<host>.log"
+run_ranks envtok-mace train --config "$CONFIG" ${EXTRA_ARGS:-}
