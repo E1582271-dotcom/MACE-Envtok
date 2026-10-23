@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "From-scratch MACE interatomic potential with multi-node DDP training on the EnvTok subset of OMat24"
 readme = "README.md"
 license = { file = "LICENSE" }
-requires-python = ">=3.10,<3.13"
+requires-python = ">=3.11,<3.13"
 dependencies = [
     "torch==2.7.1",
     "e3nn==0.4.4",
@@ -21,6 +21,22 @@ dependencies = [
 # Linux + CUDA only: fused tensor-product kernels
 cueq = ["cuequivariance==0.8.1", "cuequivariance-torch==0.8.1", "cuequivariance-ops-torch-cu12==0.8.1; sys_platform == 'linux'"]
 track = ["wandb"]
+# MatCalc-Bench, pinned to the authors' benchmark environment so results are comparable.
+# phonors must match phonopy: phonopy 4.1.0 calls an API that phonors 0.6 renamed,
+# which makes every phonon calculation return NaN.
+bench = [
+    "matcalc==0.5.1",
+    "matminer==0.10.1",
+    "phonopy==4.1.0",
+    "phono3py==4.1.0",
+    "phonors==0.2.1",
+    "pymatgen==2026.5.4",
+    "pymatgen-core==2026.5.18",
+    "monty==2026.5.18",
+    "spglib==2.7.0",
+    "symfc==1.7.2",
+    "pandas==2.3.3",
+]
 
 [project.scripts]
 envtok-mace = "envtok_mace.cli:main"

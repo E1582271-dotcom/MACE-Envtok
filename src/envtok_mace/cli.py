@@ -12,6 +12,7 @@ COMMANDS = {
     "subset": ("envtok_mace.data.subset", "write a stratified random subset of a Frames file"),
     "matpes-build": ("envtok_mace.data.matpes", "convert the MatPES release into a Frames file"),
     "matpes": ("envtok_mace.bench.matpes", "score a model on MatPES and build the paper's tables"),
+    "matcalc": ("envtok_mace.bench.matcalc", "MatCalc-Bench (formation energy, moduli, C_V, softening)"),
     "ref-eval": ("envtok_mace.eval.reference", "evaluate a reference mace-torch model on a Frames file"),
     "train": ("envtok_mace.train.run", "train a model (one process per GPU)"),
     "eval": ("envtok_mace.eval.run_eval", "score checkpoints / mace-torch models on a Frames file"),

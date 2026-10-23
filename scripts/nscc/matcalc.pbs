@@ -1,0 +1,38 @@
+#!/bin/bash
+# MatCalc-Bench on one GPU with several worker processes (float64, e3nn backend):
+#   1. our model on all four benchmarks,
+#   2. the authors' EnvTok model on a sample, to check this pipeline against their CSVs,
+#   3. merge, and summarise next to the authors' published results.
+# Stage the benchmark data on the login node first (compute nodes are offline):
+#   python -c "from matcalc.benchmark import get_benchmark_data as g; [g(n) for n in (
+#     'wbm-random-pbe52-equilibrium-2025.1.json.gz', 'mp-binary-pbe-elasticity-2025.1.json.gz',
+#     'alexandria-binary-pbe-phonon-2025.1.json.gz', 'wbm-high-energy-states.json.gz')]"
+#   qsub -P <project> -v MODEL=$HOME/envtok_runs/envtok_8gpu/best.pt scripts/nscc/matcalc.pbs
+#PBS -N envtok-matcalc
+#PBS -q normal
+#PBS -l select=1:ncpus=16:ngpus=1:mem=110gb
+#PBS -l walltime=12:00:00
+#PBS -j oe
+set -euo pipefail
+cd "${PBS_O_WORKDIR:-$PWD}"
+. scripts/nscc/env.sh
+: "${MODEL:?}"
+
+OUT=${OUT:-$ENVTOK_SCRATCH/matcalc_runs}
+AUTH=${AUTH:-$ENVTOK_SCRATCH/zenodo/benchmarks_matcalc/benchmarks/matcalc/6.5M-atoms}
+AUTH_MODEL=${AUTH_MODEL:-$(ls "$REPO_DIR"/local/zenodo/models/models/6.5M-atoms/*v14_T100*.model)}
+WORKERS=${WORKERS:-8}
+CHECK_N=${CHECK_N:-40}
+export OMP_NUM_THREADS=$((16 / WORKERS))
+
+envtok-mace matcalc --model "$MODEL" --label ours --out "$OUT/ours" \
+    --workers "$WORKERS" --threads 16 --backend e3nn
+envtok-mace matcalc --merge --label ours --out "$OUT/ours"
+
+envtok-mace matcalc --model "$AUTH_MODEL" --label authors_envtok_rerun --out "$OUT/authors_envtok_rerun" \
+    --workers "$WORKERS" --threads 16 --backend e3nn --limit "$CHECK_N"
+envtok-mace matcalc --merge --label authors_envtok_rerun --out "$OUT/authors_envtok_rerun"
+
+envtok-mace matcalc --summary "$AUTH/EnvTok" "$AUTH/DIRECT" "$AUTH/rdm/seed_1" "$AUTH/rdm/seed_2" \
+    "$AUTH/rdm/seed_3" "$AUTH/rdm/seed_4" "$AUTH/MACE-OMAT-0" "$OUT/ours" \
+    --labels authors_envtok authors_direct rdm1 rdm2 rdm3 rdm4 mace_omat0 ours --out "$OUT/summary"
