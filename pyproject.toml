@@ -1,6 +1,6 @@
 [project]
 name = "envtok-mace"
-version = "0.9.0"
+version = "1.0.0"
 description = "From-scratch MACE interatomic potential with multi-node DDP training on the EnvTok subset of OMat24"
 readme = "README.md"
 license = { file = "LICENSE" }

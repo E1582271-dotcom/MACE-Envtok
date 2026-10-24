@@ -56,3 +56,34 @@ def test_gradients_match(pair, val40):
     mapped = convert_state_dict(grads[0], ref, cueq)
     for name, g in grads[1].items():
         torch.testing.assert_close(g, mapped[name], rtol=1e-8, atol=1e-10, msg=name)
+
+
+def test_load_weights_tolerates_only_cuequivariance_constants(pair):
+    """A checkpoint written where cuEquivariance's GPU kernels are installed lacks the
+    constant buffers of its CPU implementation; loading it must still work, and must
+    still fail on a missing parameter."""
+    import re
+
+    from envtok_mace.model.backends import load_weights
+
+    _, cueq = pair
+    state = cueq.state_dict()
+    constants = [k for k in state if re.search(r"\.graph\.c\d+$", k)]
+    assert constants, "the CPU build registers derived constants"
+    stripped = {k: v for k, v in state.items() if k not in constants}
+    fresh = MACE(MACEConfig(**{**cueq.config.to_dict()}))
+    load_weights(fresh, stripped)
+    for (name, a), b in zip(cueq.named_parameters(), fresh.parameters()):
+        assert torch.equal(a, b), name
+    # derived constants in a file are ignored: the module keeps the ones it built,
+    # at the precision in use (a float32 copy would cost float64 runs accuracy)
+    tampered = {k: (2 * v if "projection" in k else v) for k, v in state.items()}
+    assert any("projection" in k for k in tampered)
+    load_weights(fresh, tampered)
+    for name, buf in fresh.named_buffers():
+        if "projection" in name:
+            assert torch.equal(buf, dict(cueq.named_buffers())[name]), name
+    broken = dict(stripped)
+    broken.pop(next(n for n, _ in cueq.named_parameters()))
+    with pytest.raises(RuntimeError, match="missing"):
+        load_weights(fresh, broken)

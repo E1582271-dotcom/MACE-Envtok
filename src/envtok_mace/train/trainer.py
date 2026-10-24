@@ -29,6 +29,7 @@ from ..data.batch import collate
 from ..data.frames import Frames
 from ..data.samplers import TrainPlan, eval_shards, stratified_subset
 from ..eval.metrics import evaluate
+from ..model.backends import load_weights
 from ..model.mace import MACE, MACEConfig
 from .checkpoint import load_checkpoint, rng_state, save_checkpoint, set_rng_state
 from .dist import DistEnv, all_gather_objects, all_reduce_sum, barrier, broadcast_flag
@@ -231,7 +232,7 @@ class Trainer:
         if not path.exists():
             return False
         state = load_checkpoint(path, map_location=self.env.device)
-        self.model.load_state_dict(state["model"])
+        load_weights(self.model, state["model"])
         self.ema.load_state_dict(state["ema"])
         self.optimizer.load_state_dict(state["optimizer"])
         self.scheduler.load_state_dict(state["scheduler"])

@@ -12,6 +12,7 @@ and activations always use the e3nn "mul_ir" layout outside these modules.
 from __future__ import annotations
 
 import itertools
+import re
 
 import numpy as np
 import torch
@@ -197,6 +198,42 @@ def symmetric_contraction(
 
 
 # --------------------------------------------------------- weight conversion
+# Every buffer inside a cuEquivariance module is derived from the irreps when the
+# module is built (index graphs, the projection of the symmetric contraction).
+# They are never read from a checkpoint: which of them exist depends on whether
+# the GPU kernels are installed, and a saved copy carries the precision it was
+# built in (float32 during training), which costs float64 runs ~1e-8 relative
+# accuracy. The module's own copy is built at the precision in use. Buffers of
+# our own modules (E0s, scale, shift, radial constants) are model data and load
+# as usual.
+_CUEQ_CONSTANT = re.compile(r"\.f\.(?:m|fallback)\.graphs\.\d+\.graph\.c\d+$")
+
+
+def _derived_buffers(model) -> set[str]:
+    names = set()
+    for prefix, module in model.named_modules():
+        if type(module).__module__.startswith("cuequivariance"):
+            names |= {f"{prefix}.{name}" if prefix else name for name, _ in module.named_buffers()}
+    return names
+
+
+def load_weights(model, state: dict) -> None:
+    """``model.load_state_dict(state)`` for everything except cuEquivariance's derived
+    constants, which keep the values the module computed; any other missing or extra
+    entry is an error."""
+    derived = _derived_buffers(model)
+
+    def is_derived(key):
+        return key in derived or _CUEQ_CONSTANT.search(key) is not None
+
+    result = model.load_state_dict({k: v for k, v in state.items() if not is_derived(k)}, strict=False)
+    missing = [k for k in result.missing_keys if not is_derived(k)]
+    if missing or result.unexpected_keys:
+        raise RuntimeError(
+            f"weights do not match the model: missing {missing[:5]}, unexpected {result.unexpected_keys[:5]}"
+        )
+
+
 def convert_state_dict(state: dict, src_model, dst_model) -> dict:
     """Map a state dict of ``src_model`` onto ``dst_model`` (same architecture,
     possibly different backend)."""

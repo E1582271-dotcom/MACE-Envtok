@@ -52,10 +52,10 @@ L 0 2.5
       <!-- $\mathdefault{10^{-2}}$ -->
       <g style="fill: #4d4d4d" transform="translate(46.514062 172.563412)">
        <text>
-        <tspan x="0" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial'; fill: #4d4d4d">1</tspan>
-        <tspan x="3.61499" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial'; fill: #4d4d4d">0</tspan>
-        <tspan x="7.292187" y="-2.729688" style="font-size: 4.55px; font-family: 'Arial'; fill: #4d4d4d">−</tspan>
-        <tspan x="9.949316" y="-2.729688" style="font-size: 4.55px; font-family: 'Arial'; fill: #4d4d4d">2</tspan>
+        <tspan x="0" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">1</tspan>
+        <tspan x="3.61499" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">0</tspan>
+        <tspan x="7.292187" y="-2.729688" style="font-size: 4.55px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">−</tspan>
+        <tspan x="9.949316" y="-2.729688" style="font-size: 4.55px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">2</tspan>
        </text>
       </g>
      </g>
@@ -70,10 +70,10 @@ L 0 2.5
       <!-- $\mathdefault{10^{-1}}$ -->
       <g style="fill: #4d4d4d" transform="translate(78.909359 172.563412)">
        <text>
-        <tspan x="0" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial'; fill: #4d4d4d">1</tspan>
-        <tspan x="3.61499" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial'; fill: #4d4d4d">0</tspan>
-        <tspan x="7.292187" y="-2.729688" style="font-size: 4.55px; font-family: 'Arial'; fill: #4d4d4d">−</tspan>
-        <tspan x="9.949316" y="-2.729688" style="font-size: 4.55px; font-family: 'Arial'; fill: #4d4d4d">1</tspan>
+        <tspan x="0" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">1</tspan>
+        <tspan x="3.61499" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">0</tspan>
+        <tspan x="7.292187" y="-2.729688" style="font-size: 4.55px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">−</tspan>
+        <tspan x="9.949316" y="-2.729688" style="font-size: 4.55px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">1</tspan>
        </text>
       </g>
      </g>
@@ -88,9 +88,9 @@ L 0 2.5
       <!-- $\mathdefault{10^{0}}$ -->
       <g style="fill: #4d4d4d" transform="translate(112.637156 172.563412)">
        <text>
-        <tspan x="0" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial'; fill: #4d4d4d">1</tspan>
-        <tspan x="3.61499" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial'; fill: #4d4d4d">0</tspan>
-        <tspan x="7.292187" y="-2.729688" style="font-size: 4.55px; font-family: 'Arial'; fill: #4d4d4d">0</tspan>
+        <tspan x="0" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">1</tspan>
+        <tspan x="3.61499" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">0</tspan>
+        <tspan x="7.292187" y="-2.729688" style="font-size: 4.55px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">0</tspan>
        </text>
       </g>
      </g>
@@ -105,9 +105,9 @@ L 0 2.5
       <!-- $\mathdefault{10^{1}}$ -->
       <g style="fill: #4d4d4d" transform="translate(145.032453 172.563412)">
        <text>
-        <tspan x="0" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial'; fill: #4d4d4d">1</tspan>
-        <tspan x="3.61499" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial'; fill: #4d4d4d">0</tspan>
-        <tspan x="7.292187" y="-2.729688" style="font-size: 4.55px; font-family: 'Arial'; fill: #4d4d4d">1</tspan>
+        <tspan x="0" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">1</tspan>
+        <tspan x="3.61499" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">0</tspan>
+        <tspan x="7.292187" y="-2.729688" style="font-size: 4.55px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">1</tspan>
        </text>
       </g>
      </g>
@@ -122,9 +122,9 @@ L 0 2.5
       <!-- $\mathdefault{10^{2}}$ -->
       <g style="fill: #4d4d4d" transform="translate(177.42775 172.563412)">
        <text>
-        <tspan x="0" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial'; fill: #4d4d4d">1</tspan>
-        <tspan x="3.61499" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial'; fill: #4d4d4d">0</tspan>
-        <tspan x="7.292187" y="-2.729688" style="font-size: 4.55px; font-family: 'Arial'; fill: #4d4d4d">2</tspan>
+        <tspan x="0" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">1</tspan>
+        <tspan x="3.61499" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">0</tspan>
+        <tspan x="7.292187" y="-2.729688" style="font-size: 4.55px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">2</tspan>
        </text>
       </g>
      </g>
@@ -427,10 +427,10 @@ L -2.5 0
       <!-- $\mathdefault{10^{-2}}$ -->
       <g style="fill: #4d4d4d" transform="translate(17.23775 146.6346)">
        <text>
-        <tspan x="0" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial'; fill: #4d4d4d">1</tspan>
-        <tspan x="3.61499" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial'; fill: #4d4d4d">0</tspan>
-        <tspan x="7.292187" y="-2.729688" style="font-size: 4.55px; font-family: 'Arial'; fill: #4d4d4d">−</tspan>
-        <tspan x="9.949316" y="-2.729688" style="font-size: 4.55px; font-family: 'Arial'; fill: #4d4d4d">2</tspan>
+        <tspan x="0" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">1</tspan>
+        <tspan x="3.61499" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">0</tspan>
+        <tspan x="7.292187" y="-2.729688" style="font-size: 4.55px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">−</tspan>
+        <tspan x="9.949316" y="-2.729688" style="font-size: 4.55px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">2</tspan>
        </text>
       </g>
      </g>
@@ -445,10 +445,10 @@ L -2.5 0
       <!-- $\mathdefault{10^{-1}}$ -->
       <g style="fill: #4d4d4d" transform="translate(17.23775 114.239303)">
        <text>
-        <tspan x="0" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial'; fill: #4d4d4d">1</tspan>
-        <tspan x="3.61499" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial'; fill: #4d4d4d">0</tspan>
-        <tspan x="7.292187" y="-2.729688" style="font-size: 4.55px; font-family: 'Arial'; fill: #4d4d4d">−</tspan>
-        <tspan x="9.949316" y="-2.729688" style="font-size: 4.55px; font-family: 'Arial'; fill: #4d4d4d">1</tspan>
+        <tspan x="0" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">1</tspan>
+        <tspan x="3.61499" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">0</tspan>
+        <tspan x="7.292187" y="-2.729688" style="font-size: 4.55px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">−</tspan>
+        <tspan x="9.949316" y="-2.729688" style="font-size: 4.55px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">1</tspan>
        </text>
       </g>
      </g>
@@ -463,9 +463,9 @@ L -2.5 0
       <!-- $\mathdefault{10^{0}}$ -->
       <g style="fill: #4d4d4d" transform="translate(19.90275 81.844006)">
        <text>
-        <tspan x="0" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial'; fill: #4d4d4d">1</tspan>
-        <tspan x="3.61499" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial'; fill: #4d4d4d">0</tspan>
-        <tspan x="7.292187" y="-2.729688" style="font-size: 4.55px; font-family: 'Arial'; fill: #4d4d4d">0</tspan>
+        <tspan x="0" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">1</tspan>
+        <tspan x="3.61499" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">0</tspan>
+        <tspan x="7.292187" y="-2.729688" style="font-size: 4.55px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">0</tspan>
        </text>
       </g>
      </g>
@@ -480,9 +480,9 @@ L -2.5 0
       <!-- $\mathdefault{10^{1}}$ -->
       <g style="fill: #4d4d4d" transform="translate(19.90275 49.448709)">
        <text>
-        <tspan x="0" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial'; fill: #4d4d4d">1</tspan>
-        <tspan x="3.61499" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial'; fill: #4d4d4d">0</tspan>
-        <tspan x="7.292187" y="-2.729688" style="font-size: 4.55px; font-family: 'Arial'; fill: #4d4d4d">1</tspan>
+        <tspan x="0" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">1</tspan>
+        <tspan x="3.61499" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">0</tspan>
+        <tspan x="7.292187" y="-2.729688" style="font-size: 4.55px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">1</tspan>
        </text>
       </g>
      </g>
@@ -497,9 +497,9 @@ L -2.5 0
       <!-- $\mathdefault{10^{2}}$ -->
       <g style="fill: #4d4d4d" transform="translate(19.90275 17.053412)">
        <text>
-        <tspan x="0" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial'; fill: #4d4d4d">1</tspan>
-        <tspan x="3.61499" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial'; fill: #4d4d4d">0</tspan>
-        <tspan x="7.292187" y="-2.729688" style="font-size: 4.55px; font-family: 'Arial'; fill: #4d4d4d">2</tspan>
+        <tspan x="0" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">1</tspan>
+        <tspan x="3.61499" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">0</tspan>
+        <tspan x="7.292187" y="-2.729688" style="font-size: 4.55px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">2</tspan>
        </text>
       </g>
      </g>
@@ -1461,10 +1461,10 @@ z
       <!-- $\mathdefault{10^{-2}}$ -->
       <g style="fill: #4d4d4d" transform="translate(236.816378 172.563412)">
        <text>
-        <tspan x="0" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial'; fill: #4d4d4d">1</tspan>
-        <tspan x="3.61499" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial'; fill: #4d4d4d">0</tspan>
-        <tspan x="7.292187" y="-2.729688" style="font-size: 4.55px; font-family: 'Arial'; fill: #4d4d4d">−</tspan>
-        <tspan x="9.949316" y="-2.729688" style="font-size: 4.55px; font-family: 'Arial'; fill: #4d4d4d">2</tspan>
+        <tspan x="0" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">1</tspan>
+        <tspan x="3.61499" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">0</tspan>
+        <tspan x="7.292187" y="-2.729688" style="font-size: 4.55px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">−</tspan>
+        <tspan x="9.949316" y="-2.729688" style="font-size: 4.55px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">2</tspan>
        </text>
       </g>
      </g>
@@ -1479,10 +1479,10 @@ z
       <!-- $\mathdefault{10^{-1}}$ -->
       <g style="fill: #4d4d4d" transform="translate(269.211675 172.563412)">
        <text>
-        <tspan x="0" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial'; fill: #4d4d4d">1</tspan>
-        <tspan x="3.61499" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial'; fill: #4d4d4d">0</tspan>
-        <tspan x="7.292187" y="-2.729688" style="font-size: 4.55px; font-family: 'Arial'; fill: #4d4d4d">−</tspan>
-        <tspan x="9.949316" y="-2.729688" style="font-size: 4.55px; font-family: 'Arial'; fill: #4d4d4d">1</tspan>
+        <tspan x="0" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">1</tspan>
+        <tspan x="3.61499" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">0</tspan>
+        <tspan x="7.292187" y="-2.729688" style="font-size: 4.55px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">−</tspan>
+        <tspan x="9.949316" y="-2.729688" style="font-size: 4.55px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">1</tspan>
        </text>
       </g>
      </g>
@@ -1497,9 +1497,9 @@ z
       <!-- $\mathdefault{10^{0}}$ -->
       <g style="fill: #4d4d4d" transform="translate(302.939472 172.563412)">
        <text>
-        <tspan x="0" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial'; fill: #4d4d4d">1</tspan>
-        <tspan x="3.61499" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial'; fill: #4d4d4d">0</tspan>
-        <tspan x="7.292187" y="-2.729688" style="font-size: 4.55px; font-family: 'Arial'; fill: #4d4d4d">0</tspan>
+        <tspan x="0" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">1</tspan>
+        <tspan x="3.61499" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">0</tspan>
+        <tspan x="7.292187" y="-2.729688" style="font-size: 4.55px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">0</tspan>
        </text>
       </g>
      </g>
@@ -1514,9 +1514,9 @@ z
       <!-- $\mathdefault{10^{1}}$ -->
       <g style="fill: #4d4d4d" transform="translate(335.334769 172.563412)">
        <text>
-        <tspan x="0" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial'; fill: #4d4d4d">1</tspan>
-        <tspan x="3.61499" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial'; fill: #4d4d4d">0</tspan>
-        <tspan x="7.292187" y="-2.729688" style="font-size: 4.55px; font-family: 'Arial'; fill: #4d4d4d">1</tspan>
+        <tspan x="0" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">1</tspan>
+        <tspan x="3.61499" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">0</tspan>
+        <tspan x="7.292187" y="-2.729688" style="font-size: 4.55px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">1</tspan>
        </text>
       </g>
      </g>
@@ -1531,9 +1531,9 @@ z
       <!-- $\mathdefault{10^{2}}$ -->
       <g style="fill: #4d4d4d" transform="translate(367.730066 172.563412)">
        <text>
-        <tspan x="0" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial'; fill: #4d4d4d">1</tspan>
-        <tspan x="3.61499" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial'; fill: #4d4d4d">0</tspan>
-        <tspan x="7.292187" y="-2.729688" style="font-size: 4.55px; font-family: 'Arial'; fill: #4d4d4d">2</tspan>
+        <tspan x="0" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">1</tspan>
+        <tspan x="3.61499" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">0</tspan>
+        <tspan x="7.292187" y="-2.729688" style="font-size: 4.55px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">2</tspan>
        </text>
       </g>
      </g>
@@ -1826,10 +1826,10 @@ z
       <!-- $\mathdefault{10^{-2}}$ -->
       <g style="fill: #4d4d4d" transform="translate(207.540066 146.6346)">
        <text>
-        <tspan x="0" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial'; fill: #4d4d4d">1</tspan>
-        <tspan x="3.61499" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial'; fill: #4d4d4d">0</tspan>
-        <tspan x="7.292187" y="-2.729688" style="font-size: 4.55px; font-family: 'Arial'; fill: #4d4d4d">−</tspan>
-        <tspan x="9.949316" y="-2.729688" style="font-size: 4.55px; font-family: 'Arial'; fill: #4d4d4d">2</tspan>
+        <tspan x="0" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">1</tspan>
+        <tspan x="3.61499" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">0</tspan>
+        <tspan x="7.292187" y="-2.729688" style="font-size: 4.55px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">−</tspan>
+        <tspan x="9.949316" y="-2.729688" style="font-size: 4.55px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">2</tspan>
        </text>
       </g>
      </g>
@@ -1844,10 +1844,10 @@ z
       <!-- $\mathdefault{10^{-1}}$ -->
       <g style="fill: #4d4d4d" transform="translate(207.540066 114.239303)">
        <text>
-        <tspan x="0" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial'; fill: #4d4d4d">1</tspan>
-        <tspan x="3.61499" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial'; fill: #4d4d4d">0</tspan>
-        <tspan x="7.292187" y="-2.729688" style="font-size: 4.55px; font-family: 'Arial'; fill: #4d4d4d">−</tspan>
-        <tspan x="9.949316" y="-2.729688" style="font-size: 4.55px; font-family: 'Arial'; fill: #4d4d4d">1</tspan>
+        <tspan x="0" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">1</tspan>
+        <tspan x="3.61499" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">0</tspan>
+        <tspan x="7.292187" y="-2.729688" style="font-size: 4.55px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">−</tspan>
+        <tspan x="9.949316" y="-2.729688" style="font-size: 4.55px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">1</tspan>
        </text>
       </g>
      </g>
@@ -1862,9 +1862,9 @@ z
       <!-- $\mathdefault{10^{0}}$ -->
       <g style="fill: #4d4d4d" transform="translate(210.205066 81.844006)">
        <text>
-        <tspan x="0" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial'; fill: #4d4d4d">1</tspan>
-        <tspan x="3.61499" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial'; fill: #4d4d4d">0</tspan>
-        <tspan x="7.292187" y="-2.729688" style="font-size: 4.55px; font-family: 'Arial'; fill: #4d4d4d">0</tspan>
+        <tspan x="0" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">1</tspan>
+        <tspan x="3.61499" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">0</tspan>
+        <tspan x="7.292187" y="-2.729688" style="font-size: 4.55px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">0</tspan>
        </text>
       </g>
      </g>
@@ -1879,9 +1879,9 @@ z
       <!-- $\mathdefault{10^{1}}$ -->
       <g style="fill: #4d4d4d" transform="translate(210.205066 49.448709)">
        <text>
-        <tspan x="0" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial'; fill: #4d4d4d">1</tspan>
-        <tspan x="3.61499" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial'; fill: #4d4d4d">0</tspan>
-        <tspan x="7.292187" y="-2.729688" style="font-size: 4.55px; font-family: 'Arial'; fill: #4d4d4d">1</tspan>
+        <tspan x="0" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">1</tspan>
+        <tspan x="3.61499" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">0</tspan>
+        <tspan x="7.292187" y="-2.729688" style="font-size: 4.55px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">1</tspan>
        </text>
       </g>
      </g>
@@ -1896,9 +1896,9 @@ z
       <!-- $\mathdefault{10^{2}}$ -->
       <g style="fill: #4d4d4d" transform="translate(210.205066 17.053412)">
        <text>
-        <tspan x="0" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial'; fill: #4d4d4d">1</tspan>
-        <tspan x="3.61499" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial'; fill: #4d4d4d">0</tspan>
-        <tspan x="7.292187" y="-2.729688" style="font-size: 4.55px; font-family: 'Arial'; fill: #4d4d4d">2</tspan>
+        <tspan x="0" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">1</tspan>
+        <tspan x="3.61499" y="-0.045188" style="font-size: 6.5px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">0</tspan>
+        <tspan x="7.292187" y="-2.729688" style="font-size: 4.55px; font-family: 'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif; fill: #4d4d4d">2</tspan>
        </text>
       </g>
      </g>
