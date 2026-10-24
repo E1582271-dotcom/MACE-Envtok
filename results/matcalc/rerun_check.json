@@ -1,0 +1,15 @@
+{
+ "what": "authors' released EnvTok model run through this pipeline (40 random structures per benchmark) vs their published CSVs",
+ "max_relative_difference": {
+  "K_vrh": 9.5e-14,
+  "G_vrh": 4e-13,
+  "CV": 1.8e-10,
+  "softening_scale": 2.1e-10
+ },
+ "Eform_median_relative_difference": 0.000195,
+ "Eform_note": "formation-energy relaxations start from a randomly perturbed structure, so they agree to ~0.1-0.2 meV/atom rather than bitwise",
+ "failures_in_rerun": {
+  "Phonon": "0 of 37 (1 in the authors' own run)",
+  "Softening": "0 of 26"
+ }
+}

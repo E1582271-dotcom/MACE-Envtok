@@ -4,9 +4,9 @@ A from-scratch PyTorch implementation of the MACE equivariant interatomic potent
 trained with multi-node DDP on the EnvTok subset of OMat24 (795,721 structures,
 about 6.6M atoms), following Moerman et al., *Atoms that Matter* (arXiv:2610.14392).
 
-**Status:** the model is trained and evaluated on OMat24 validation data and on
-MatPES. MatCalc, MD-stability and Li-ion migration benchmarks are next
-([docs/PLAN.md](docs/PLAN.md)).
+**Status:** the model is trained and evaluated on every benchmark of the paper:
+OMat24 validation, MatPES, MatCalc-Bench, MD stability and Li-ion migration
+barriers ([docs/MATPES.md](docs/MATPES.md), [docs/BENCHMARKS.md](docs/BENCHMARKS.md)).
 
 ## Results
 
@@ -53,6 +53,45 @@ explodes. Atoms with errors above 10 eV/Å: 4,693 for the authors' EnvTok model,
 Each subset has one training run here and one from the authors. The gap to their
 EnvTok model is larger than the spread of their random-subset seeds, but one run
 on each side is not enough to explain it.
+
+**MatCalc-Bench, materials properties.** Median errors against DFT; formation
+energy as the paper's MAE.
+
+| Model | E_form MAE (meV/atom) | Bulk modulus | Shear modulus | C_V (300 K) | Force softening |
+|---|---|---|---|---|---|
+| **This repository** | 62.9 | **+1.4 %** | −4.9 % | +0.41 % | 3.6 % |
+| Authors, EnvTok | 62.7 | +1.5 % | −5.8 % | +0.52 % | 3.8 % |
+| Authors, random (4 seeds) | 65.5 | +2.7 % | −5.6 % | +0.38 % | 3.3 % |
+| Authors, DIRECT | 74.3 | +2.0 % | −8.0 % | +0.44 % | 3.9 % |
+| MACE-OMAT-0 | 56.0 | +3.2 % | +1.4 % | +0.13 % | 2.4 % |
+
+**MD stability.** 80 NPT runs from 300 K and 0 GPa to 3,000 K and 500 GPa over
+10 ps. Completion is scored at the authors' step speed, because the protocol's
+wall-clock limit truncates slow runs.
+
+| Model | Mean completion | Physically diverged |
+|---|---|---|
+| **This repository** | **96.1 %** | **0 / 80** |
+| Authors, EnvTok | 92.1 % | 6 / 80 |
+| Authors, DIRECT | 92.9 % | 9 / 80 |
+| Authors, random (4 seeds) | 81.1 % | 85 / 320 |
+| MACE-OMAT-0 | 75.4 % | 31 / 80 |
+
+**Li-ion migration barriers (nebDFT2k).** 1,656 hops, MAE on converged bands. The
+reference is PBE without Hubbard U, so hosts that need U are a separate column.
+
+| Model | Without U (eV) | With U (eV) |
+|---|---|---|
+| **This repository** | 0.138 | **0.259** |
+| Authors, EnvTok | 0.124 | 0.269 |
+| Authors, random (4 seeds) | 0.148 ± 0.037 | 0.264 |
+| Authors, DIRECT | 0.116 | 0.316 |
+| MACE-OMAT-0 | 0.146 | 0.270 |
+
+Every benchmark pipeline was checked first by running the authors' released model
+through it. Elastic moduli, heat capacities, softening scales and NEB barriers
+match their published values to between 1e-13 and 2e-10 relative
+([docs/BENCHMARKS.md](docs/BENCHMARKS.md)).
 
 ## What is implemented here
 
@@ -111,6 +150,12 @@ the [MatPES](https://huggingface.co/datasets/materialyze/matpes) release with
   and Models.* arXiv:2410.12771 (2024).
 - A. D. Kaplan et al. *A Foundational Potential Energy Surface Dataset for
   Materials (MatPES).* arXiv:2503.04070 (2025).
+- MatCalc and MatCalc-Bench: https://github.com/materialsvirtuallab/matcalc
+- MLIP Arena stability benchmark (RM24 structures):
+  https://huggingface.co/datasets/atomind/mlip-arena
+- A. Dembitskiy et al. *Benchmarking machine learning models for predicting lithium
+  ion migration (LiTraj).* npj Comput. Mater. 11, 131 (2025),
+  doi:10.1038/s41524-025-01571-z
 
 ## License
 
