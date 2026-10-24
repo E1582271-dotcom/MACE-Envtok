@@ -49,3 +49,9 @@ def test_every_figure_renders_without_layout_problems(tmp_path):
             assert (tmp_path / f"{name}.{ext}").stat().st_size > 0
     assert {k: v for k, v in figures.PROBLEMS.items() if v} == {}
     assert len(figures.PROBLEMS) == 8
+    # every font declaration in the SVGs falls back to a sans-serif face
+    import re
+
+    for svg in tmp_path.glob("*.svg"):
+        fonts = re.findall(r"font-family: ?([^;\"]*)", svg.read_text())
+        assert fonts and all(f.rstrip().endswith("sans-serif") for f in fonts), svg.name

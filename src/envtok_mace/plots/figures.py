@@ -131,6 +131,27 @@ def reference(ax, value, label=True, vertical=True, text="MACE-OMAT-0", pos=None
         )
 
 
+FONT_STACK = "'Arial', 'Helvetica', 'Liberation Sans', 'DejaVu Sans', sans-serif"
+
+
+def _font_fallbacks(path: Path) -> None:
+    """Give every font declaration in an SVG the full sans-serif stack.
+
+    With editable SVG text matplotlib names only the font it used ('Arial', or
+    'DejaVu Sans' for mathtext), and a browser without that font falls back to
+    its default, often a serif face. The stack keeps every viewer on sans-serif.
+    """
+    import re
+
+    text = path.read_text()
+    text = re.sub(
+        r"font-family: ?'[^;\"]*?'(?=[;\"])",
+        lambda m: m.group(0) if "sans-serif" in m.group(0) else f"font-family: {FONT_STACK}",
+        text,
+    )
+    path.write_text(text)
+
+
 PROBLEMS: dict[str, list[str]] = {}
 
 
@@ -145,6 +166,7 @@ def save(fig, out: Path, name: str) -> None:
     out.mkdir(parents=True, exist_ok=True)
     # no creation dates in the files, so a figure redrawn from the same data is byte-identical
     fig.savefig(out / f"{name}.svg", metadata={"Date": None})
+    _font_fallbacks(out / f"{name}.svg")
     fig.savefig(out / f"{name}.pdf", metadata={"CreationDate": None, "ModDate": None})
     fig.savefig(out / f"{name}.png", dpi=300)
     plt.close(fig)
