@@ -296,6 +296,44 @@ def write_tables(result: dict, out_dir: str | Path, scale: float = 1e3) -> None:
     print(f"wrote {len(result['metrics']) * len(DOMAIN_ORDER)} tables -> {out_dir}", flush=True)
 
 
+def exceedance(runs: dict[str, dict], domain: np.ndarray, points_per_decade: int = 20,
+               lo_meV: float = 1.0, hi_meV: float = 1e6) -> list[dict]:
+    """Share of a domain's atoms in structures whose force MAE exceeds each threshold.
+
+    The tail of the error distribution, atom-weighted as the pooled tables are:
+    one row per domain and threshold, one column per model.
+    """
+    grid = np.logspace(np.log10(lo_meV), np.log10(hi_meV),
+                       int(round(points_per_decade * np.log10(hi_meV / lo_meV))) + 1)
+    rows = []
+    for dk in ("bulk", "non_bulk"):
+        m = domain == dk
+        if not m.any():
+            continue
+        cols = {}
+        for L, r in runs.items():
+            err = 1e3 * worst_fill(r["f_mae_comp"][m])
+            w = r["natoms"][m].astype(float)
+            order = np.argsort(err)
+            e, cw = err[order], np.cumsum(w[order])
+            below = np.searchsorted(e, grid, side="right")
+            cols[L] = 1.0 - np.where(below > 0, cw[np.maximum(below - 1, 0)], 0.0) / cw[-1]
+        for i, g in enumerate(grid):
+            rows.append({"domain": dk, "threshold_meV_per_A": float(g),
+                         **{L: float(c[i]) for L, c in cols.items()}})
+    return rows
+
+
+def write_exceedance(rows: list[dict], out_dir: str | Path) -> None:
+    path = Path(out_dir) / "f_mae_comp_exceedance.csv"
+    with path.open("w", newline="") as fh:
+        w = csv.DictWriter(fh, fieldnames=list(rows[0]))
+        w.writeheader()
+        for r in rows:
+            w.writerow({k: (f"{v:.6g}" if isinstance(v, float) else v) for k, v in r.items()})
+    print(f"wrote {path}", flush=True)
+
+
 # ------------------------------------------------------------- cross-check modes
 def compare_per_atom(ours_dir: str | Path, theirs_dir: str | Path) -> dict:
     """Atom-by-atom agreement with the authors' own run of the same model."""
@@ -423,6 +461,7 @@ def run(args: argparse.Namespace) -> None:
         labels = args.labels or [Path(d).name for d in args.tables]
         runs, domain = align(_load_runs(args.tables, labels), args.domain_from, args.domain_rule)
         write_tables(tables(runs, domain), args.out or ".")
+        write_exceedance(exceedance(runs, domain), args.out or ".")
         return
 
     from ..eval.run_eval import load_model

@@ -261,6 +261,24 @@ def summary(dirs: list[str], labels: list[str]) -> dict:
     return out
 
 
+def hops_table(dirs: list[str], labels: list[str]):
+    """One row per hop: the DFT barrier and, per model, the predicted barrier and
+    whether the hop is scored (converged band, supported elements)."""
+    import pandas as pd
+
+    out = None
+    for label, d in zip(labels, dirs):
+        df = load_results(d, label)[["edge_id", "chemsys", "has_specific_TM", "em_dft",
+                                     "em_pred", "kept"]]
+        df = df.rename(columns={"em_pred": f"em_pred_{label}", "kept": f"kept_{label}"})
+        if out is None:
+            out = df
+        else:
+            out = out.merge(df.drop(columns=["chemsys", "has_specific_TM", "em_dft"]),
+                            on="edge_id", how="outer")
+    return out.sort_values("edge_id").reset_index(drop=True)
+
+
 # -------------------------------------------------------------------------- CLI
 def add_arguments(p: argparse.ArgumentParser) -> None:
     p.add_argument("--model", default=None)
@@ -288,6 +306,8 @@ def run(args: argparse.Namespace) -> None:
         res = summary(args.summary, labels)
         Path(args.out).mkdir(parents=True, exist_ok=True)
         (Path(args.out) / "nebdft2k_summary.json").write_text(json.dumps(res, indent=1))
+        hops_table(args.summary, labels).to_csv(Path(args.out) / "nebdft2k_hops.csv",
+                                                index=False, float_format="%.5f")
         for split in ("without_U", "with_U"):
             print(f"== {split}   MAE / RMSE / median|err| (eV), n kept")
             for L, r in res.items():

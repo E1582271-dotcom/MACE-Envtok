@@ -17,6 +17,7 @@ COMMANDS = {
     "nebdft2k": ("envtok_mace.bench.nebdft2k", "LiTraj nebDFT2k Li-ion migration barriers"),
     "latent": ("envtok_mace.analysis.latent", "latent-space distance from the training data vs force error"),
     "id-ood": ("envtok_mace.analysis.id_ood", "one table of all benchmarks grouped ID / shift / OOD"),
+    "figures": ("envtok_mace.plots.figures", "draw every figure from results/ (SVG, PDF, PNG)"),
     "ref-eval": ("envtok_mace.eval.reference", "evaluate a reference mace-torch model on a Frames file"),
     "train": ("envtok_mace.train.run", "train a model (one process per GPU)"),
     "eval": ("envtok_mace.eval.run_eval", "score checkpoints / mace-torch models on a Frames file"),
