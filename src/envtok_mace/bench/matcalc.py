@@ -153,6 +153,24 @@ def shard(bench, index: int, count: int) -> int:
 
 
 # -------------------------------------------------------------------- running
+def _log_failures(calc, path: Path) -> None:
+    """matcalc turns any exception inside a calculation into NaN and keeps no
+    trace of it. Record each calculator exception, so a NaN has a stated cause
+    (for example CUDA running out of memory when workers share a GPU)."""
+    inner = calc.calculate
+
+    def calculate(*args, **kwargs):
+        try:
+            return inner(*args, **kwargs)
+        except Exception as exc:
+            with path.open("a") as fh:
+                fh.write(f"{time.strftime('%H:%M:%S')} {type(exc).__name__}: "
+                         f"{str(exc).splitlines()[0][:200] if str(exc) else ''}\n")
+            raise
+
+    calc.calculate = calculate
+
+
 def _run_shard(model: str, label: str, out: str, names: tuple, index: int, count: int,
                device: str, dtype: str, limit: int | None, threads: int,
                backend: str | None = None) -> None:
@@ -164,6 +182,7 @@ def _run_shard(model: str, label: str, out: str, names: tuple, index: int, count
     out_dir = Path(out)
     calc = EnvTokCalculator(model, device=device, dtype=dtype, backend=backend)
     tag = f"shard{index}of{count}"
+    _log_failures(calc, out_dir / f".calc_errors_{label}_{tag}.log")
     for name, bench in build_benchmarks(names, limit).items():
         csv = out_dir / f"{name}_{label}_{tag}.csv"
         if csv.exists():

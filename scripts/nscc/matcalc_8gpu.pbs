@@ -1,0 +1,42 @@
+#!/bin/bash
+# MatCalc-Bench on 8 GPUs from any nodes, a few worker processes per GPU (float64, e3nn).
+# The phonon benchmark relaxes and displaces 2x2x2 supercells: eight float64 workers on
+# one 40 GB GPU run out of memory now and then, and matcalc records each such failure
+# as NaN, so keep WORKERS small. ONLY selects benchmarks (e.g. "Phonon Softening").
+#   qsub -P <project> -v MODEL=$HOME/envtok_runs/envtok_8gpu/best.pt,ONLY="Phonon Softening" \
+#        scripts/nscc/matcalc_8gpu.pbs
+#PBS -N envtok-mc8
+#PBS -q normal
+#PBS -l select=8:ngpus=1:ncpus=16:mem=110gb:mpiprocs=1
+#PBS -l place=free
+#PBS -l walltime=06:00:00
+#PBS -j oe
+set -euo pipefail
+cd "${PBS_O_WORKDIR:-$PWD}"
+. scripts/nscc/env.sh
+. scripts/nscc/ranks_env.sh
+: "${MODEL:?}"
+ranks_layout
+OUT=${OUT:-$ENVTOK_SCRATCH/matcalc_runs}
+AUTH=${AUTH:-$ENVTOK_SCRATCH/zenodo/benchmarks_matcalc/benchmarks/matcalc/6.5M-atoms}
+AUTH_MODEL=${AUTH_MODEL:-$(ls "$REPO_DIR"/local/zenodo/models/models/6.5M-atoms/*v14_T100*.model)}
+WORKERS=${WORKERS:-2}
+CHECK_N=${CHECK_N:-40}
+ONLY_ARGS=${ONLY:+--only $ONLY}
+export OMP_NUM_THREADS=$((16 / WORKERS))
+export RANK_LOG=$ENVTOK_SCRATCH/runs/logs/${PBS_JOBID%%.*}
+mkdir -p "$(dirname "$RANK_LOG")"
+echo "job $PBS_JOBID: $NRANKS GPUs on $RANK_NNODES node(s); per-node output: $RANK_LOG.<host>.log"
+
+run_ranks envtok-mace matcalc --model "$MODEL" --label ours --out "$OUT/ours" \
+    --workers "$WORKERS" --threads 16 --backend e3nn $ONLY_ARGS || true
+envtok-mace matcalc --merge --label ours --out "$OUT/ours"
+
+run_ranks envtok-mace matcalc --model "$AUTH_MODEL" --label authors_envtok_rerun \
+    --out "$OUT/authors_envtok_rerun" --workers "$WORKERS" --threads 16 --backend e3nn \
+    --limit "$CHECK_N" $ONLY_ARGS || true
+envtok-mace matcalc --merge --label authors_envtok_rerun --out "$OUT/authors_envtok_rerun"
+
+envtok-mace matcalc --summary "$AUTH/EnvTok" "$AUTH/DIRECT" "$AUTH/rdm/seed_1" "$AUTH/rdm/seed_2" \
+    "$AUTH/rdm/seed_3" "$AUTH/rdm/seed_4" "$AUTH/MACE-OMAT-0" "$OUT/ours" \
+    --labels authors_envtok authors_direct rdm1 rdm2 rdm3 rdm4 mace_omat0 ours --out "$OUT/summary"
