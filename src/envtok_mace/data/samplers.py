@@ -43,8 +43,15 @@ def balanced_slots(cost: np.ndarray, num_slots: int) -> np.ndarray:
 
 
 class TrainPlan:
-    def __init__(self, cost: np.ndarray, per_rank_batch: int, world_size: int = 1,
-                 accumulation: int = 1, seed: int = 0, balance: bool = True):
+    def __init__(
+        self,
+        cost: np.ndarray,
+        per_rank_batch: int,
+        world_size: int = 1,
+        accumulation: int = 1,
+        seed: int = 0,
+        balance: bool = True,
+    ):
         self.cost = np.asarray(cost)
         self.per_rank_batch = per_rank_batch
         self.world_size = world_size
@@ -82,8 +89,14 @@ class TrainPlan:
         return steps
 
 
-def eval_shards(indices: np.ndarray, cost: np.ndarray, world_size: int, rank: int,
-                batch_size: int, max_cost: float | None = None) -> list[np.ndarray]:
+def eval_shards(
+    indices: np.ndarray,
+    cost: np.ndarray,
+    world_size: int,
+    rank: int,
+    batch_size: int,
+    max_cost: float | None = None,
+) -> list[np.ndarray]:
     """Split evaluation structures over ranks (no padding, no duplicates) and into
     batches of similar size: at most ``batch_size`` structures and, if given, at
     most ``max_cost`` total cost (e.g. edges) per batch, so batches of the largest

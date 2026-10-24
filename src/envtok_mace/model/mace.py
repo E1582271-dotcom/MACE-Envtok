@@ -27,10 +27,10 @@ class MACEConfig:
     r_max: float = 6.0
     num_bessel: int = 10
     cutoff_p: int = 5
-    max_ell: int = 3            # highest spherical-harmonic degree on edges
+    max_ell: int = 3  # highest spherical-harmonic degree on edges
     num_channels: int = 128
-    max_L: int = 1              # highest irrep kept in hidden node features
-    correlation: int = 3        # body order of the product basis (up to 4-body per layer)
+    max_L: int = 1  # highest irrep kept in hidden node features
+    correlation: int = 3  # body order of the product basis (up to 4-body per layer)
     num_interactions: int = 2
     radial_mlp: tuple[int, ...] = (64, 64, 64)
     readout_hidden: int = 16
@@ -40,7 +40,7 @@ class MACEConfig:
     e0s: dict[int, float] = field(default_factory=lambda: dict(E0S))
     scale: float = 1.0
     shift: float = 0.0
-    backend: str = "e3nn"       # "e3nn" (reference) or "cueq" (cuEquivariance kernels)
+    backend: str = "e3nn"  # "e3nn" (reference) or "cueq" (cuEquivariance kernels)
     cueq_fallback: bool | None = None  # cueq only: True forces the pure-PyTorch implementation
 
     def to_dict(self) -> dict:
@@ -49,7 +49,7 @@ class MACEConfig:
         return d
 
     @classmethod
-    def from_dict(cls, d: dict) -> "MACEConfig":
+    def from_dict(cls, d: dict) -> MACEConfig:
         d = dict(d)
         d["radial_mlp"] = tuple(d["radial_mlp"])
         d["z_table"] = tuple(d["z_table"])
@@ -71,7 +71,7 @@ class MACE(nn.Module):
         self.register_buffer("shift", torch.tensor(cfg.shift, dtype=dtype))
 
         attrs = o3.Irreps(f"{Z}x0e")
-        hidden = o3.Irreps([(C, (l, (-1) ** l)) for l in range(cfg.max_L + 1)])
+        hidden = o3.Irreps([(C, (ell, (-1) ** ell)) for ell in range(cfg.max_L + 1)])
         scalars = o3.Irreps(f"{C}x0e")
         sh = o3.Irreps.spherical_harmonics(cfg.max_ell)
         inter = (sh * C).sort().irreps.simplify()  # C x (0e + 1o + 2e + 3o)
@@ -88,13 +88,28 @@ class MACE(nn.Module):
             first, last = t == 0, t == cfg.num_interactions - 1
             node_in = scalars if first else hidden
             out = scalars if last else hidden
-            self.interactions.append(DensityInteraction(
-                node_in, sh, cfg.num_bessel, inter, Z, residual=not first,
-                skip_irreps=None if first else out, radial_mlp=cfg.radial_mlp, backend=cfg.backend,
-                use_fallback=cfg.cueq_fallback))
-            self.products.append(ProductBasis(inter, out, cfg.correlation, Z, backend=cfg.backend,
-                                              use_fallback=cfg.cueq_fallback))
-            self.readouts.append(MLPReadout(out, cfg.readout_hidden) if last else o3.Linear(out, o3.Irreps("0e")))
+            self.interactions.append(
+                DensityInteraction(
+                    node_in,
+                    sh,
+                    cfg.num_bessel,
+                    inter,
+                    Z,
+                    residual=not first,
+                    skip_irreps=None if first else out,
+                    radial_mlp=cfg.radial_mlp,
+                    backend=cfg.backend,
+                    use_fallback=cfg.cueq_fallback,
+                )
+            )
+            self.products.append(
+                ProductBasis(
+                    inter, out, cfg.correlation, Z, backend=cfg.backend, use_fallback=cfg.cueq_fallback
+                )
+            )
+            self.readouts.append(
+                MLPReadout(out, cfg.readout_hidden) if last else o3.Linear(out, o3.Irreps("0e"))
+            )
 
     # ------------------------------------------------------------------ helpers
     def species_index(self, numbers: torch.Tensor) -> torch.Tensor:
@@ -113,8 +128,14 @@ class MACE(nn.Module):
         return idx
 
     # ------------------------------------------------------------------ forward
-    def forward(self, batch, compute_force: bool = True, compute_stress: bool = False,
-                training: bool = False, return_features: bool = False) -> dict[str, torch.Tensor]:
+    def forward(
+        self,
+        batch,
+        compute_force: bool = True,
+        compute_stress: bool = False,
+        training: bool = False,
+        return_features: bool = False,
+    ) -> dict[str, torch.Tensor]:
         """``batch`` provides positions [N,3], numbers [N], edge_index [2,E],
         unit_shifts [E,3], cell [G,3,3], batch [N] (graph of each atom), num_graphs."""
         numbers = batch.numbers
@@ -130,8 +151,9 @@ class MACE(nn.Module):
         displacement = None
         if compute_stress:
             # Differentiate w.r.t. a symmetric strain applied to positions and cell.
-            displacement = torch.zeros((num_graphs, 3, 3), dtype=positions.dtype, device=positions.device,
-                                       requires_grad=True)
+            displacement = torch.zeros(
+                (num_graphs, 3, 3), dtype=positions.dtype, device=positions.device, requires_grad=True
+            )
             strain = 0.5 * (displacement + displacement.transpose(-1, -2))
             pos = positions + torch.einsum("ni,nij->nj", positions, strain[graph])
             cell = cell + torch.matmul(cell, strain)
@@ -148,8 +170,11 @@ class MACE(nn.Module):
         node_e0 = self.e0[species]
         edge_sh = self.spherical_harmonics(vectors)
         edge_radial = self.radial(lengths, z_s, z_r)
-        node_energy = (self.zbl(lengths, z_s, z_r, receiver, n) if self.zbl is not None
-                       else torch.zeros(n, dtype=pos.dtype, device=pos.device))
+        node_energy = (
+            self.zbl(lengths, z_s, z_r, receiver, n)
+            if self.zbl is not None
+            else torch.zeros(n, dtype=pos.dtype, device=pos.device)
+        )
 
         h = self.node_embedding(node_attrs)
         features = []
@@ -166,8 +191,9 @@ class MACE(nn.Module):
 
         if compute_force or compute_stress:
             inputs = [positions] + ([displacement] if compute_stress else [])
-            grads = torch.autograd.grad([inter_e.sum()], inputs, create_graph=training,
-                                        retain_graph=training, allow_unused=True)
+            grads = torch.autograd.grad(
+                [inter_e.sum()], inputs, create_graph=training, retain_graph=training, allow_unused=True
+            )
             g_pos = grads[0] if grads[0] is not None else torch.zeros_like(positions)
             out["forces"] = -g_pos
             if compute_stress:

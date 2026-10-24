@@ -40,7 +40,9 @@ def _env_int(names: tuple[str, ...], default: int) -> int:
     return default
 
 
-def init_distributed(device: str = "cuda", backend: str | None = None, timeout_minutes: int | None = None) -> DistEnv:
+def init_distributed(
+    device: str = "cuda", backend: str | None = None, timeout_minutes: int | None = None
+) -> DistEnv:
     if timeout_minutes is None:
         timeout_minutes = int(os.environ.get("ENVTOK_PG_TIMEOUT_MIN", "30"))
     rank = _env_int(("RANK", "PMI_RANK", "PALS_RANKID", "OMPI_COMM_WORLD_RANK"), 0)
@@ -48,20 +50,27 @@ def init_distributed(device: str = "cuda", backend: str | None = None, timeout_m
     local = _env_int(("LOCAL_RANK", "PALS_LOCAL_RANKID", "PMI_LOCAL_RANK", "OMPI_COMM_WORLD_LOCAL_RANK"), 0)
     if device == "cuda" and not torch.cuda.is_available():
         # Never fall back silently: a CPU/gloo rank among NCCL ranks hangs the whole job.
-        raise RuntimeError(f"rank {rank} on {socket.gethostname()}: device 'cuda' requested but no GPU is "
-                           f"visible (CUDA_VISIBLE_DEVICES={os.environ.get('CUDA_VISIBLE_DEVICES', 'unset')})")
+        raise RuntimeError(
+            f"rank {rank} on {socket.gethostname()}: device 'cuda' requested but no GPU is "
+            f"visible (CUDA_VISIBLE_DEVICES={os.environ.get('CUDA_VISIBLE_DEVICES', 'unset')})"
+        )
     use_cuda = device == "cuda"
     if use_cuda:
         # The job sees only its own GPUs on each node (PBS cgroups); ranks on a node
         # take them in order of their local rank.
         n_visible = torch.cuda.device_count()
         if local >= n_visible:
-            raise RuntimeError(f"local rank {local} but only {n_visible} visible GPU(s) on {socket.gethostname()}")
+            raise RuntimeError(
+                f"local rank {local} but only {n_visible} visible GPU(s) on {socket.gethostname()}"
+            )
         torch.cuda.set_device(local)
         dev = torch.device("cuda", local)
-        print(f"rank {rank}/{world} on {socket.gethostname()}: local rank {local}, "
-              f"GPU {torch.cuda.get_device_name(local)} (CUDA_VISIBLE_DEVICES="
-              f"{os.environ.get('CUDA_VISIBLE_DEVICES', 'unset')})", flush=True)
+        print(
+            f"rank {rank}/{world} on {socket.gethostname()}: local rank {local}, "
+            f"GPU {torch.cuda.get_device_name(local)} (CUDA_VISIBLE_DEVICES="
+            f"{os.environ.get('CUDA_VISIBLE_DEVICES', 'unset')})",
+            flush=True,
+        )
     else:
         dev = torch.device("cpu")
     if world > 1 and not dist.is_initialized():
@@ -69,8 +78,13 @@ def init_distributed(device: str = "cuda", backend: str | None = None, timeout_m
         if "MASTER_ADDR" not in os.environ:
             raise RuntimeError("MASTER_ADDR is not set; the job script must export it")
         os.environ["RANK"], os.environ["WORLD_SIZE"] = str(rank), str(world)
-        dist.init_process_group(backend or ("nccl" if use_cuda else "gloo"), init_method="env://",
-                                rank=rank, world_size=world, timeout=timedelta(minutes=timeout_minutes))
+        dist.init_process_group(
+            backend or ("nccl" if use_cuda else "gloo"),
+            init_method="env://",
+            rank=rank,
+            world_size=world,
+            timeout=timedelta(minutes=timeout_minutes),
+        )
     return DistEnv(rank=rank, local_rank=local, world_size=world, device=dev)
 
 

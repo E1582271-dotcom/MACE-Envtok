@@ -8,7 +8,6 @@ import torch
 
 from envtok_mace.bench import matpes as bench
 from envtok_mace.data import matpes as ingest
-from envtok_mace.data.frames import Frames
 from envtok_mace.data.samplers import eval_shards
 
 # A record in the shape of the MatPES release: a pymatgen structure dict plus
@@ -21,10 +20,13 @@ def _record(sid, symbols, cell=((4.0, 0, 0), (0, 4.0, 0), (0, 0, 4.0))):
     frac = np.linspace(0.1, 0.6, len(symbols))
     return {
         "matpes_id": sid,
-        "structure": {"lattice": {"matrix": cell.tolist(), "pbc": [True, True, True]},
-                      "sites": [{"species": [{"element": s, "occu": 1}],
-                                 "xyz": (np.array([f, f, f]) @ cell).tolist()}
-                                for s, f in zip(symbols, frac)]},
+        "structure": {
+            "lattice": {"matrix": cell.tolist(), "pbc": [True, True, True]},
+            "sites": [
+                {"species": [{"element": s, "occu": 1}], "xyz": (np.array([f, f, f]) @ cell).tolist()}
+                for s, f in zip(symbols, frac)
+            ],
+        },
         "energy": -1.5 * len(symbols),
         "forces": [[0.1 * (i + 1), -0.2, 0.3] for i in range(len(symbols))],
         "stress": RAW_STRESS,
@@ -34,9 +36,11 @@ def _record(sid, symbols, cell=((4.0, 0, 0), (0, 4.0, 0), (0, 0, 4.0))):
 @pytest.fixture
 def jsonl(tmp_path):
     path = tmp_path / "matpes_sample.jsonl"
-    records = [_record("matpes-a_1", ["Si", "O"]),
-               _record("matpes-b_2", ["Fe", "Fe", "O"]),
-               _record("matpes-c_3", ["Ce", "O"])]  # Ce is outside the model's table
+    records = [
+        _record("matpes-a_1", ["Si", "O"]),
+        _record("matpes-b_2", ["Fe", "Fe", "O"]),
+        _record("matpes-c_3", ["Ce", "O"]),
+    ]  # Ce is outside the model's table
     path.write_text("\n".join(json.dumps(r) for r in records) + "\n")
     return path
 
@@ -71,8 +75,7 @@ def test_restress_moves_between_conventions(jsonl):
     assert stored == (-1.0, "voigt")
     assert bench._restress(frames.stress, stored, stored) == pytest.approx(frames.stress)
     flipped = bench._restress(frames.stress, stored, (1.0, "vasp"))
-    assert flipped[0] == pytest.approx(
-        ingest.KBAR_TO_EV_PER_A3 * np.array([1.0, 2.0, 3.0, 50.0, 60.0, 40.0]))
+    assert flipped[0] == pytest.approx(ingest.KBAR_TO_EV_PER_A3 * np.array([1.0, 2.0, 3.0, 50.0, 60.0, 40.0]))
 
 
 # ------------------------------------------------------------------- estimators
@@ -90,8 +93,7 @@ def test_estimators_match_plain_numpy_with_equal_weights():
 def test_weights_and_cap_are_shared_across_models():
     v, w = np.array([1.0, 10.0]), np.array([9.0, 1.0])
     assert bench.wmean(v, w) == pytest.approx((9 * 1 + 10) / 10)
-    cap = bench.pooled_cap([np.array([1.0, 2.0]), np.array([1e6, 3.0])],
-                           [np.ones(2), np.ones(2)], q=0.75)
+    cap = bench.pooled_cap([np.array([1.0, 2.0]), np.array([1e6, 3.0])], [np.ones(2), np.ones(2)], q=0.75)
     assert cap == 3.0  # the outlier is above the 0.75 quantile of the pool
 
 
@@ -103,10 +105,17 @@ def test_worst_fill_replaces_blowups_with_the_worst_finite_value():
 def test_tables_use_the_reference_domains_and_atom_weights():
     sid = np.array(["a", "b", "c"])
     natoms = np.array([1, 1, 98])
-    ref = {"sid": sid, "natoms": natoms, "domain": np.array(["bulk", "bulk", "non_bulk"]),
-           "f_mae_comp": np.array([1.0, 3.0, 10.0])}
-    ours = {"sid": sid[::-1], "natoms": natoms[::-1],
-            "f_mae_comp": np.array([10.0, 3.0, 1.0])}  # same values, reversed order
+    ref = {
+        "sid": sid,
+        "natoms": natoms,
+        "domain": np.array(["bulk", "bulk", "non_bulk"]),
+        "f_mae_comp": np.array([1.0, 3.0, 10.0]),
+    }
+    ours = {
+        "sid": sid[::-1],
+        "natoms": natoms[::-1],
+        "f_mae_comp": np.array([10.0, 3.0, 1.0]),
+    }  # same values, reversed order
     runs, domain = bench.align({"theirs": ref, "ours": ours}, domain_from="theirs", rule="stored")
     assert list(runs["ours"]["f_mae_comp"]) == [1.0, 3.0, 10.0]
     out = bench.tables(runs, domain)
@@ -120,8 +129,10 @@ def test_tables_use_the_reference_domains_and_atom_weights():
 
 def test_paper_domains_relabel_by_dimensionality_only():
     """Fragmented but 3D-periodic cells count as bulk; overcompressed keeps its label."""
-    run = {"domain": np.array(["bulk", "non_bulk", "non_bulk", "overcompressed"]),
-           "dim": np.array([3, 3, 2, 1])}
+    run = {
+        "domain": np.array(["bulk", "non_bulk", "non_bulk", "overcompressed"]),
+        "dim": np.array([3, 3, 2, 1]),
+    }
     assert list(bench.paper_domains(run)) == ["bulk", "bulk", "non_bulk", "overcompressed"]
 
 
@@ -140,15 +151,14 @@ def test_scoring_identities_against_the_pooled_metrics(val40, envtok_model_path)
     metrics = evaluate(model, val40, batches, device, dtype)
 
     w = ps["natoms"].astype(float)
-    assert 1e3 * bench.wmean(ps["f_mae_comp"], w) == pytest.approx(
-        metrics["force_mae_meV_per_A"], rel=1e-9)
+    assert 1e3 * bench.wmean(ps["f_mae_comp"], w) == pytest.approx(metrics["force_mae_meV_per_A"], rel=1e-9)
     assert 1e3 * bench.wmean(ps["abs_d_energy_per_atom"], np.ones_like(w)) == pytest.approx(
-        metrics["energy_mae_meV_per_atom"], rel=1e-9)
+        metrics["energy_mae_meV_per_atom"], rel=1e-9
+    )
     # The pooled stress metric averages all nine components of the 3x3, the paper's
     # quantity the six Voigt ones, so they differ; their ratio is bounded by
     # [0.75, 1.5] (both extremes mean a purely diagonal or purely shear error).
-    ratio = bench.wmean(ps["s_mae_voigt6"], np.ones_like(w)) / (
-        1e-3 * metrics["stress_mae_meV_per_A3"])
+    ratio = bench.wmean(ps["s_mae_voigt6"], np.ones_like(w)) / (1e-3 * metrics["stress_mae_meV_per_A3"])
     assert 0.75 <= ratio <= 1.5
 
     # Independent path for the Voigt-6 stress error: compare the model's 3x3 output
@@ -163,8 +173,9 @@ def test_scoring_identities_against_the_pooled_metrics(val40, envtok_model_path)
     assert pa["err_norm"].shape == (int(val40.atom_ptr[-1]),)
     assert np.array_equal(pa["struct_offset"], val40.atom_ptr)
     assert np.allclose(pa["ref_norm"], np.linalg.norm(val40.forces, axis=1), rtol=1e-6)
-    per_struct_max = np.array([pa["err_norm"][a:b].max()
-                               for a, b in zip(pa["struct_offset"][:-1], pa["struct_offset"][1:])])
+    per_struct_max = np.array(
+        [pa["err_norm"][a:b].max() for a, b in zip(pa["struct_offset"][:-1], pa["struct_offset"][1:])]
+    )
     assert np.allclose(per_struct_max, ps["f_max_norm"], rtol=1e-5)
     assert ps["f_finite"].all() and ps["e_finite"].all()
 
@@ -178,8 +189,9 @@ def test_compare_per_atom_round_trip(tmp_path, val40, envtok_model_path):
     a, b = tmp_path / "a", tmp_path / "b"
     for out, order in ((a, np.arange(len(val40))), (b, np.arange(len(val40))[::-1])):
         frames = val40.subset(order)
-        ps, pa = bench.score(model, frames, eval_shards(np.arange(len(frames)), frames.nedges,
-                                                        1, 0, 8), device, dtype)
+        ps, pa = bench.score(
+            model, frames, eval_shards(np.arange(len(frames)), frames.nedges, 1, 0, 8), device, dtype
+        )
         out.mkdir()
         np.savez(out / "per_structure.npz", **ps)
         np.savez(out / "per_atom_forces.npz", **pa)

@@ -20,22 +20,22 @@ _VOIGT_TO_FULL = np.array([[0, 5, 4], [5, 1, 3], [4, 3, 2]])
 
 @dataclass
 class Batch:
-    positions: torch.Tensor    # [N, 3]
-    numbers: torch.Tensor      # [N] atomic numbers
-    batch: torch.Tensor        # [N] structure index of each atom
-    edge_index: torch.Tensor   # [2, E] global atom indices (sender, receiver)
+    positions: torch.Tensor  # [N, 3]
+    numbers: torch.Tensor  # [N] atomic numbers
+    batch: torch.Tensor  # [N] structure index of each atom
+    edge_index: torch.Tensor  # [2, E] global atom indices (sender, receiver)
     unit_shifts: torch.Tensor  # [E, 3]
-    cell: torch.Tensor         # [G, 3, 3]
-    natoms: torch.Tensor       # [G]
-    energy: torch.Tensor       # [G]
-    forces: torch.Tensor       # [N, 3]
-    stress: torch.Tensor       # [G, 3, 3]
+    cell: torch.Tensor  # [G, 3, 3]
+    natoms: torch.Tensor  # [G]
+    energy: torch.Tensor  # [G]
+    forces: torch.Tensor  # [N, 3]
+    stress: torch.Tensor  # [G, 3, 3]
 
     @property
     def num_graphs(self) -> int:
         return int(self.natoms.shape[0])
 
-    def to(self, device=None, dtype=None) -> "Batch":
+    def to(self, device=None, dtype=None) -> Batch:
         out = {}
         for f in fields(self):
             t = getattr(self, f.name)
@@ -44,7 +44,7 @@ class Batch:
             out[f.name] = t.to(device, non_blocking=True) if device is not None else t
         return Batch(**out)
 
-    def pin_memory(self) -> "Batch":
+    def pin_memory(self) -> Batch:
         return Batch(**{f.name: getattr(self, f.name).pin_memory() for f in fields(self)})
 
 

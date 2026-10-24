@@ -24,8 +24,14 @@ def load_mace_model(path: str, device: str = "cpu", dtype: torch.dtype = torch.f
     return model.to(dtype).eval()
 
 
-def predict_with_mace(model_path: str, frames: Frames, indices: np.ndarray, device: str = "cpu",
-                      dtype: torch.dtype = torch.float64, batch_size: int = 32) -> dict[str, np.ndarray]:
+def predict_with_mace(
+    model_path: str,
+    frames: Frames,
+    indices: np.ndarray,
+    device: str = "cpu",
+    dtype: torch.dtype = torch.float64,
+    batch_size: int = 32,
+) -> dict[str, np.ndarray]:
     from ..data.batch import collate
     from ..model.mace_compat import mace_input_dict
 
@@ -33,7 +39,7 @@ def predict_with_mace(model_path: str, frames: Frames, indices: np.ndarray, devi
     ref = load_mace_model(model_path, device, dtype)
     energy, forces, stress = [], [], []
     for start in range(0, len(indices), batch_size):
-        batch = collate(frames, indices[start:start + batch_size]).to(device=device, dtype=dtype)
+        batch = collate(frames, indices[start : start + batch_size]).to(device=device, dtype=dtype)
         out = ref(mace_input_dict(batch, ref), compute_force=True, compute_stress=True)
         energy.append(out["energy"].detach().cpu().numpy())
         forces.append(out["forces"].detach().cpu().numpy())

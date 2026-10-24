@@ -43,26 +43,26 @@ class TrainConfig:
     val_file: str
     out_dir: str
     run_name: str = "envtok"
-    model: dict = field(default_factory=dict)   # MACEConfig fields to override
-    loss: dict = field(default_factory=dict)    # LossConfig fields to override
-    optim: dict = field(default_factory=dict)   # OptimConfig fields to override
-    batch_size: int = 128           # structures per rank per micro-batch
-    accumulation: int = 1           # micro-batches per optimiser step (ignored if global_batch is set)
-    global_batch: int | None = None # if set: accumulation = global_batch / (batch_size x world_size),
-                                    # so the run is the same on 8, 4, 2 or 1 GPUs
+    model: dict = field(default_factory=dict)  # MACEConfig fields to override
+    loss: dict = field(default_factory=dict)  # LossConfig fields to override
+    optim: dict = field(default_factory=dict)  # OptimConfig fields to override
+    batch_size: int = 128  # structures per rank per micro-batch
+    accumulation: int = 1  # micro-batches per optimiser step (ignored if global_batch is set)
+    global_batch: int | None = None  # if set: accumulation = global_batch / (batch_size x world_size),
+    # so the run is the same on 8, 4, 2 or 1 GPUs
     val_batch_size: int = 64
-    val_fraction: float = 0.1       # stratified by sub-dataset, fixed for the whole run
+    val_fraction: float = 0.1  # stratified by sub-dataset, fixed for the whole run
     val_seed: int = 0
     max_epochs: int = 1000
-    patience: int = 40              # epochs without improvement before stopping
-    max_steps: int | None = None    # optional cap on optimiser steps (pilots, tests)
+    patience: int = 40  # epochs without improvement before stopping
+    max_steps: int | None = None  # optional cap on optimiser steps (pilots, tests)
     seed: int = 1
     dtype: str = "float32"
     device: str = "cuda"
     num_workers: int = 8
     balance: bool = True
     log_every: int = 50
-    archive_every: int = 25         # keep a copy of the checkpoint every N epochs
+    archive_every: int = 25  # keep a copy of the checkpoint every N epochs
     walltime_seconds: float | None = None
     walltime_margin_seconds: float = 1200.0
     nan_tolerance: int = 20
@@ -71,7 +71,7 @@ class TrainConfig:
     interrupt_after_steps: int | None = None  # behave as if walltime ran out (tests of resume)
 
     @classmethod
-    def from_yaml(cls, path: str | Path, overrides: dict | None = None) -> "TrainConfig":
+    def from_yaml(cls, path: str | Path, overrides: dict | None = None) -> TrainConfig:
         data = yaml.safe_load(Path(path).read_text()) or {}
         data.update(overrides or {})
         for key in ("train_file", "val_file", "out_dir"):  # allow ${ENVTOK_DATA} etc. in paths
@@ -102,7 +102,9 @@ class Trainer:
 
         self.train_frames = Frames.load(cfg.train_file)
         if cfg.max_train_frames:
-            self.train_frames = self.train_frames.subset(np.arange(min(cfg.max_train_frames, len(self.train_frames))))
+            self.train_frames = self.train_frames.subset(
+                np.arange(min(cfg.max_train_frames, len(self.train_frames)))
+            )
         val_all = Frames.load(cfg.val_file)
         self.val_frames = val_all.subset(stratified_subset(val_all.source, cfg.val_fraction, cfg.val_seed))
         del val_all
@@ -110,8 +112,12 @@ class Trainer:
         self.model = MACE(MACEConfig(**cfg.model)).to(device=env.device, dtype=self.dtype)
         self.net = self.model
         if env.distributed:
-            self.net = DDP(self.model, device_ids=[env.local_rank] if env.device.type == "cuda" else None,
-                           broadcast_buffers=False, gradient_as_bucket_view=True)
+            self.net = DDP(
+                self.model,
+                device_ids=[env.local_rank] if env.device.type == "cuda" else None,
+                broadcast_buffers=False,
+                gradient_as_bucket_view=True,
+            )
         self.loss_cfg = LossConfig(**cfg.loss)
         self.optim_cfg = OptimConfig(**cfg.optim)
         self.optimizer = build_optimizer(self.model, self.optim_cfg)
@@ -123,8 +129,13 @@ class Trainer:
         self.plan = TrainPlan(cost, cfg.batch_size, env.world_size, self.accumulation, cfg.seed, cfg.balance)
         if self.plan.steps_per_epoch == 0:
             raise ValueError("training set is smaller than one global batch")
-        self.val_batches = eval_shards(np.arange(len(self.val_frames)), self.val_frames.nedges,
-                                       env.world_size, env.rank, cfg.val_batch_size)
+        self.val_batches = eval_shards(
+            np.arange(len(self.val_frames)),
+            self.val_frames.nedges,
+            env.world_size,
+            env.rank,
+            cfg.val_batch_size,
+        )
 
         self.epoch = 0
         self.step_in_epoch = 0
@@ -144,8 +155,10 @@ class Trainer:
             return cfg.accumulation
         per_step = cfg.batch_size * world
         if cfg.global_batch % per_step:
-            raise ValueError(f"global_batch {cfg.global_batch} is not a multiple of "
-                             f"batch_size {cfg.batch_size} x {world} ranks")
+            raise ValueError(
+                f"global_batch {cfg.global_batch} is not a multiple of "
+                f"batch_size {cfg.batch_size} x {world} ranks"
+            )
         return cfg.global_batch // per_step
 
     def _run_info(self) -> dict:
@@ -203,8 +216,15 @@ class Trainer:
             return
         with self.ema.average_parameters():
             weights = {k: v.detach().cpu().clone() for k, v in self.model.state_dict().items()}
-        save_checkpoint(self.out / "best.pt", {"model_config": self.model.config.to_dict(), "model": weights,
-                                               "epoch": self.epoch, "val": metrics})
+        save_checkpoint(
+            self.out / "best.pt",
+            {
+                "model_config": self.model.config.to_dict(),
+                "model": weights,
+                "epoch": self.epoch,
+                "val": metrics,
+            },
+        )
 
     def maybe_resume(self) -> bool:
         path = self.out / "last.pt"
@@ -219,24 +239,32 @@ class Trainer:
             setattr(self, key, state[key])
         if state.get("world_size") == self.env.world_size and "rng" in state:
             set_rng_state(state["rng"][self.env.rank])
-        self.log(f"resumed from {path}: epoch {self.epoch}, step {self.step_in_epoch}, "
-                 f"global step {self.global_step}, best val {self.best_val:.6g}")
+        self.log(
+            f"resumed from {path}: epoch {self.epoch}, step {self.step_in_epoch}, "
+            f"global step {self.global_step}, best val {self.best_val:.6g}"
+        )
         return True
 
     # ---------------------------------------------------------------- training
     def _loader(self, microbatches: list[np.ndarray]):
         cuda = self.env.device.type == "cuda"
-        kw = dict(batch_sampler=[list(m) for m in microbatches],
-                  collate_fn=functools.partial(_collate_indices, self.train_frames),
-                  num_workers=self.cfg.num_workers, pin_memory=cuda)
+        kw = dict(
+            batch_sampler=[list(m) for m in microbatches],
+            collate_fn=functools.partial(_collate_indices, self.train_frames),
+            num_workers=self.cfg.num_workers,
+            pin_memory=cuda,
+        )
         if self.cfg.num_workers > 0:
             kw["prefetch_factor"] = 4
         return torch.utils.data.DataLoader(_Indices(len(self.train_frames)), **kw)
 
     def _global_counts(self, micro: list[np.ndarray]) -> dict[str, float]:
         natoms = self.train_frames.natoms
-        local = torch.tensor([sum(len(m) for m in micro), sum(int(natoms[m].sum()) for m in micro)],
-                             dtype=torch.float64, device=self.env.device)
+        local = torch.tensor(
+            [sum(len(m) for m in micro), sum(int(natoms[m].sum()) for m in micro)],
+            dtype=torch.float64,
+            device=self.env.device,
+        )
         g, a = all_reduce_sum(local).tolist()
         return {"energy": g, "forces": 3.0 * a, "stress": 9.0 * g}
 
@@ -293,13 +321,20 @@ class Trainer:
                 if self.env.is_main:
                     t_max = max(times)
                     row = {
-                        "epoch": self.epoch, "step": self.step_in_epoch, "global_step": self.global_step,
-                        "lr": self.optimizer.param_groups[0]["lr"], "loss": step_loss.item(),
-                        "structures_per_s": n_structs / t_max, "atoms_per_s": n_atoms / t_max,
+                        "epoch": self.epoch,
+                        "step": self.step_in_epoch,
+                        "global_step": self.global_step,
+                        "lr": self.optimizer.param_groups[0]["lr"],
+                        "loss": step_loss.item(),
+                        "structures_per_s": n_structs / t_max,
+                        "atoms_per_s": n_atoms / t_max,
                         "seconds_per_step": t_max / self.cfg.log_every,
                         "rank_time_max_over_mean": t_max / (sum(times) / len(times)),
-                        "max_mem_GB": (torch.cuda.max_memory_allocated(self.env.device) / 1e9
-                                       if self.env.device.type == "cuda" else 0.0),
+                        "max_mem_GB": (
+                            torch.cuda.max_memory_allocated(self.env.device) / 1e9
+                            if self.env.device.type == "cuda"
+                            else 0.0
+                        ),
                     }
                     self.tracker.log("steps", row)
                     print(json.dumps(row), flush=True)
@@ -309,14 +344,16 @@ class Trainer:
             if self.cfg.interrupt_after_steps and self.steps_this_run >= self.cfg.interrupt_after_steps:
                 return "walltime"
             if self.global_step % 10 == 0 and broadcast_flag(
-                    self._time_left() < self.cfg.walltime_margin_seconds, self.env.device):
+                self._time_left() < self.cfg.walltime_margin_seconds, self.env.device
+            ):
                 return "walltime"
         return None
 
     def validate(self) -> dict:
         with self.ema.average_parameters():
-            return evaluate(self.model, self.val_frames, self.val_batches, self.env.device,
-                            self.dtype, self.loss_cfg)
+            return evaluate(
+                self.model, self.val_frames, self.val_batches, self.env.device, self.dtype, self.loss_cfg
+            )
 
     def fit(self) -> str:
         if (self.out / "FINISHED").exists():
@@ -324,8 +361,17 @@ class Trainer:
             return "finished"
         if not self.maybe_resume():
             metrics = self.validate()
-            self.tracker.log("epochs", {"epoch": -1, "global_step": 0, "lr": self.optim_cfg.lr,
-                                        "epoch_seconds": 0.0, "bad_epochs": 0, **metrics})
+            self.tracker.log(
+                "epochs",
+                {
+                    "epoch": -1,
+                    "global_step": 0,
+                    "lr": self.optim_cfg.lr,
+                    "epoch_seconds": 0.0,
+                    "bad_epochs": 0,
+                    **metrics,
+                },
+            )
             self.log(f"initial validation: {json.dumps(metrics)}")
         reason = "max_epochs"
         while self.epoch < self.cfg.max_epochs:
@@ -333,8 +379,10 @@ class Trainer:
             stop = self.train_epoch()
             if stop == "walltime":
                 self.save_last()
-                self.log(f"walltime almost used up; checkpoint saved at epoch {self.epoch}, "
-                         f"step {self.step_in_epoch}")
+                self.log(
+                    f"walltime almost used up; checkpoint saved at epoch {self.epoch}, "
+                    f"step {self.step_in_epoch}"
+                )
                 return "walltime"
             metrics = self.validate()
             self.scheduler.step(metrics["loss"])
@@ -344,9 +392,14 @@ class Trainer:
                 self.save_best(metrics)
             else:
                 self.bad_epochs += 1
-            row = {"epoch": self.epoch, "global_step": self.global_step,
-                   "lr": self.optimizer.param_groups[0]["lr"], "epoch_seconds": time.time() - t_epoch,
-                   "bad_epochs": self.bad_epochs, **metrics}
+            row = {
+                "epoch": self.epoch,
+                "global_step": self.global_step,
+                "lr": self.optimizer.param_groups[0]["lr"],
+                "epoch_seconds": time.time() - t_epoch,
+                "bad_epochs": self.bad_epochs,
+                **metrics,
+            }
             self.tracker.log("epochs", row)
             self.log(json.dumps(row))
             self.epoch += 1
@@ -375,7 +428,8 @@ def _git_commit() -> str:
     import subprocess
 
     try:
-        return subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=Path(__file__).parent,
-                                       stderr=subprocess.DEVNULL, text=True).strip()
+        return subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], cwd=Path(__file__).parent, stderr=subprocess.DEVNULL, text=True
+        ).strip()
     except Exception:
         return "unknown"

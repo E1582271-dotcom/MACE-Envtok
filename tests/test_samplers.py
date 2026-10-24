@@ -21,10 +21,14 @@ def test_balancing_reduces_the_heaviest_slot():
     cost = np.random.default_rng(1).lognormal(4.0, 1.0, size=4096)
     kw = dict(per_rank_batch=32, world_size=8, accumulation=1, seed=0)
     balanced, plain = TrainPlan(cost, balance=True, **kw), TrainPlan(cost, balance=False, **kw)
+
     def worst(plan):
-        loads = [[cost[plan.rank_steps(0, r)[s][0]].sum() for r in range(8)] for s in range(plan.steps_per_epoch)]
+        loads = [
+            [cost[plan.rank_steps(0, r)[s][0]].sum() for r in range(8)] for s in range(plan.steps_per_epoch)
+        ]
         loads = np.array(loads)
         return (loads.max(1) / loads.mean(1)).mean()
+
     assert worst(balanced) < 1.05 < worst(plain)
 
 

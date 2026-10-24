@@ -1,4 +1,5 @@
 """Our MACE against the reference mace-torch implementation, with shared weights."""
+
 import numpy as np
 import pytest
 import torch
@@ -35,8 +36,9 @@ def test_coupling_tensors_match_mace(ir_out, nu, float64):
 
     irreps = o3.Irreps("1x0e+1x1o+1x2e+1x3o")
     ours = u_matrix(irreps, ir_out, nu, dtype=torch.float64)
-    ref = U_matrix_real(irreps_in=irreps, irreps_out=o3.Irreps(ir_out), correlation=nu,
-                        use_cueq_cg=False, dtype=torch.float64)[-1]
+    ref = U_matrix_real(
+        irreps_in=irreps, irreps_out=o3.Irreps(ir_out), correlation=nu, use_cueq_cg=False, dtype=torch.float64
+    )[-1]
     torch.testing.assert_close(ours, ref.reshape(ours.shape), rtol=0, atol=0)
 
 

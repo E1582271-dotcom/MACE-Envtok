@@ -31,7 +31,8 @@ def _fake_prediction(batch, scale=1.0, seed=0):
     return {
         "energy": batch.energy + scale * torch.randn(batch.energy.shape, generator=g, dtype=torch.float64),
         "forces": batch.forces + scale * torch.randn(batch.forces.shape, generator=g, dtype=torch.float64),
-        "stress": batch.stress + 0.01 * scale * torch.randn(batch.stress.shape, generator=g, dtype=torch.float64),
+        "stress": batch.stress
+        + 0.01 * scale * torch.randn(batch.stress.shape, generator=g, dtype=torch.float64),
     }
 
 
@@ -71,8 +72,11 @@ def test_split_sums_equal_whole_batch_mean(val40):
     for idx in parts:
         b = collate(val40, idx)
         a1 = a0 + int(b.natoms.sum())
-        p = {"energy": pred_whole["energy"][idx], "forces": pred_whole["forces"][a0:a1],
-             "stress": pred_whole["stress"][idx]}
+        p = {
+            "energy": pred_whole["energy"][idx],
+            "forces": pred_whole["forces"][a0:a1],
+            "stress": pred_whole["stress"][idx],
+        }
         total = total + combine(loss_sums(p, b, cfg), counts, cfg)
         a0 = a1
     torch.testing.assert_close(total, full, rtol=1e-12, atol=1e-15)

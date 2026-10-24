@@ -1,0 +1,34 @@
+#!/bin/bash
+# Latent-space distance from the training data vs force error, for our model and the
+# authors' EnvTok model (1 GPU). Per model: features of ~1M training atoms (the
+# reference), of held-out OMat24 validation atoms, and of all MatPES test atoms;
+# then PCA + kNN distances, with MatPES split into the paper's bulk / non-bulk domains.
+#   qsub -P <project> scripts/nscc/latent.pbs
+#PBS -N envtok-latent
+#PBS -q normal
+#PBS -l select=1:ncpus=16:ngpus=1:mem=110gb
+#PBS -l walltime=02:00:01
+#PBS -j oe
+set -euo pipefail
+cd "${PBS_O_WORKDIR:-$PWD}"
+. scripts/nscc/env.sh
+OUT=${OUT:-$ENVTOK_SCRATCH/latent}
+N_REF=${N_REF:-1000000}
+N_VAL=${N_VAL:-500000}
+SPLIT=$ENVTOK_SCRATCH/zenodo/benchmarks_matpes/benchmarks/matpes/EnvTok/per_structure.npz
+AUTH_MODEL=$(ls "$REPO_DIR"/local/zenodo/models/models/6.5M-atoms/*v14_T100*.model)
+mkdir -p "$OUT"
+
+for spec in "ours:$HOME/envtok_runs/envtok_8gpu/best.pt" "authors_envtok:$AUTH_MODEL"; do
+    label=${spec%%:*}; model=${spec#*:}
+    mkdir -p "$OUT/$label"
+    envtok-mace latent --extract --model "$model" --backend cueq --n-atoms "$N_REF" \
+        --frames "$ENVTOK_DATA/envtok_train.h5" --out "$OUT/$label/train_ref.npz"
+    envtok-mace latent --extract --model "$model" --backend cueq --n-atoms "$N_VAL" \
+        --frames "$ENVTOK_DATA/omat24_val_90pct_heldout.h5" --out "$OUT/$label/omat24_val.npz"
+    envtok-mace latent --extract --model "$model" --backend cueq \
+        --frames "$ENVTOK_DATA/matpes_test.h5" --out "$OUT/$label/matpes.npz"
+    envtok-mace latent --analyze --ref "$OUT/$label/train_ref.npz" \
+        --tests "$OUT/$label/omat24_val.npz" "$OUT/$label/matpes.npz" \
+        --labels omat24_val matpes --split-by "$SPLIT" --out "$OUT/latent_$label.json"
+done

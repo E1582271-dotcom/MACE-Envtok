@@ -39,8 +39,9 @@ def _graph_chunk(bounds: tuple[int, int]):
     return start, np.array(counts, dtype=np.int64), np.concatenate(idx, axis=1), np.concatenate(shifts)
 
 
-def build_graphs(src: str | Path, dst: str | Path, cutoff: float, workers: int = 1,
-                 chunk: int = 2000) -> Frames:
+def build_graphs(
+    src: str | Path, dst: str | Path, cutoff: float, workers: int = 1, chunk: int = 2000
+) -> Frames:
     t0 = time.time()
     frames = Frames.load(src)
     n = len(frames)
@@ -67,8 +68,11 @@ def build_graphs(src: str | Path, dst: str | Path, cutoff: float, workers: int =
     avg_nb = frames.edge_ptr[-1] / frames.atom_ptr[-1]
     frames.attrs.update(r_max=float(cutoff), avg_num_neighbors=float(avg_nb))
     frames.save(dst)
-    print(f"wrote {n:,} graphs, {int(frames.edge_ptr[-1]):,} edges, "
-          f"avg_num_neighbors {avg_nb:.4f} -> {dst} ({time.time() - t0:.0f} s)", flush=True)
+    print(
+        f"wrote {n:,} graphs, {int(frames.edge_ptr[-1]):,} edges, "
+        f"avg_num_neighbors {avg_nb:.4f} -> {dst} ({time.time() - t0:.0f} s)",
+        flush=True,
+    )
     return frames
 
 

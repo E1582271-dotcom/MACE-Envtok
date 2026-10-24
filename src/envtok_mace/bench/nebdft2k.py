@@ -31,7 +31,7 @@ from ..data.constants import Z_TABLE
 
 ALLOWED_Z = frozenset(Z_TABLE)
 DATASET = "nebDFT2k"
-GATE = 0.1   # eV/A, largest force component over band and end-points
+GATE = 0.1  # eV/A, largest force component over band and end-points
 
 
 def _unsupported(chemsys: str) -> bool:
@@ -90,16 +90,21 @@ def relax_band(images, calcs, fmax: float = 0.05, steps: int = 10_000, k: float 
     neb = NEB(images, parallel=False, k=k, climb=True, method="improvedtangent")
     band = FIRE(neb, **quiet)
     band.run(fmax=fmax, steps=steps)
-    worst = max(float(np.abs(neb.get_forces()).max()),
-                float(np.abs(images[0].get_forces()).max()),
-                float(np.abs(images[-1].get_forces()).max()))
-    return {"steps_source": src.get_number_of_steps(), "steps_target": tgt.get_number_of_steps(),
-            "steps_band": band.get_number_of_steps(), "fmax_worst": worst,
-            "converged": bool(worst < GATE)}
+    worst = max(
+        float(np.abs(neb.get_forces()).max()),
+        float(np.abs(images[0].get_forces()).max()),
+        float(np.abs(images[-1].get_forces()).max()),
+    )
+    return {
+        "steps_source": src.get_number_of_steps(),
+        "steps_target": tgt.get_number_of_steps(),
+        "steps_band": band.get_number_of_steps(),
+        "fmax_worst": worst,
+        "converged": bool(worst < GATE),
+    }
 
 
-def run_hop(row: dict, calcs, cache: Path, out: Path, label: str, timeout: float,
-            attempts: int = 2) -> str:
+def run_hop(row: dict, calcs, cache: Path, out: Path, label: str, timeout: float, attempts: int = 2) -> str:
     from ase.io import read
     from litraj.metrics import PA_MAE
     from litraj.utils import get_barrier
@@ -116,10 +121,14 @@ def run_hop(row: dict, calcs, cache: Path, out: Path, label: str, timeout: float
         try:
             with wall_timeout(timeout):
                 images = [im.copy() for im in init]
-                diag = relax_band(images, calcs[:len(images)])
-                result = {**diag, "em_pred": float(get_barrier(images)),
-                          "pa_mae": float(PA_MAE(ref, images)) if len(ref) == len(images) else None,
-                          "n_images": len(images), "natoms": len(images[0])}
+                diag = relax_band(images, calcs[: len(images)])
+                result = {
+                    **diag,
+                    "em_pred": float(get_barrier(images)),
+                    "pa_mae": float(PA_MAE(ref, images)) if len(ref) == len(images) else None,
+                    "n_images": len(images),
+                    "natoms": len(images[0]),
+                }
             break
         except _Timeout:
             last = "timeout"
@@ -127,13 +136,17 @@ def run_hop(row: dict, calcs, cache: Path, out: Path, label: str, timeout: float
             tb = traceback.format_exc()
             (out / f".failed_{path.stem}.txt").write_text(tb)
             if "CUDA error" in tb:  # device fault: this process can no longer use the GPU
-                raise SystemExit(f"CUDA device error in {edge}; worker stopped, rerun needed")
+                raise SystemExit(f"CUDA device error in {edge}; worker stopped, rerun needed") from None
             last = "oom" if "out of memory" in tb.lower() else "crash"
     done.write_text("done\n")
     if result is None:
         return last or "crash"
-    result.update(edge_id=edge, chemsys=row["chemsys"], em_dft=float(row["em_dft"]),
-                  has_specific_TM=bool(row["has_specific_TM"]))
+    result.update(
+        edge_id=edge,
+        chemsys=row["chemsys"],
+        em_dft=float(row["em_dft"]),
+        has_specific_TM=bool(row["has_specific_TM"]),
+    )
     path.write_text(json.dumps(result))
     return "converged" if result["converged"] else "not_converged"
 
@@ -151,7 +164,7 @@ def run_benchmark(args: argparse.Namespace) -> None:
     out.mkdir(parents=True, exist_ok=True)
     work = worklist(cache)
     if args.limit:
-        work = work[:args.limit]
+        work = work[: args.limit]
     # Shard only the hops that are left, so a rerun spreads over all workers.
     work = [r for r in work if not (out / f"{args.label}_{r['edge_id']}.done").exists()]
     k = args.workers
@@ -162,8 +175,7 @@ def run_benchmark(args: argparse.Namespace) -> None:
     import multiprocessing as mp
 
     ctx = mp.get_context("spawn")
-    procs = [ctx.Process(target=_run_shard, args=(args, device, out, cache, work, i, n))
-             for i, n in shards]
+    procs = [ctx.Process(target=_run_shard, args=(args, device, out, cache, work, i, n)) for i, n in shards]
     for p in procs:
         p.start()
     for p in procs:
@@ -178,13 +190,11 @@ def _run_shard(args, device, out, cache, work, index, count) -> None:
     torch.set_num_threads(max(1, args.threads // args.workers))
     first = EnvTokCalculator(args.model, device=device, dtype=args.dtype, backend=args.backend)
     # images share the model weights; each needs its own calculator object for NEB
-    calcs = [first] + [EnvTokCalculator(first.model, device=device, dtype=args.dtype)
-                       for _ in range(8)]
+    calcs = [first] + [EnvTokCalculator(first.model, device=device, dtype=args.dtype) for _ in range(8)]
     for row in work[index::count]:
         t0 = time.time()
         status = run_hop(row, calcs, cache, out, args.label, args.timeout)
-        print(f"[shard {index}/{count}] {row['edge_id']}: {status} in {time.time() - t0:.0f} s",
-              flush=True)
+        print(f"[shard {index}/{count}] {row['edge_id']}: {status} in {time.time() - t0:.0f} s", flush=True)
 
 
 # ---------------------------------------------------------------------- scoring
@@ -199,12 +209,17 @@ def load_results(run_dir: str | Path, label: str | None = None):
     else:
         pattern = f"{label}_*.json" if label else "*.json"
         df = pd.DataFrame([json.loads(p.read_text()) for p in sorted(run_dir.glob(pattern))])
-    oom = (df["oom_terminated"].astype(bool) if "oom_terminated" in df
-           else pd.Series(False, index=df.index))
-    unsupported = (df["has_unsupported"].astype(bool) if "has_unsupported" in df
-                   else df["chemsys"].map(_unsupported))
-    df["kept"] = (df["converged"].astype(bool) & ~oom & ~unsupported
-                  & np.isfinite(df["em_pred"]) & np.isfinite(df["em_dft"]))
+    oom = df["oom_terminated"].astype(bool) if "oom_terminated" in df else pd.Series(False, index=df.index)
+    unsupported = (
+        df["has_unsupported"].astype(bool) if "has_unsupported" in df else df["chemsys"].map(_unsupported)
+    )
+    df["kept"] = (
+        df["converged"].astype(bool)
+        & ~oom
+        & ~unsupported
+        & np.isfinite(df["em_pred"])
+        & np.isfinite(df["em_dft"])
+    )
     df["err"] = df["em_pred"] - df["em_dft"]
     return df
 
@@ -213,9 +228,14 @@ def metrics(err: np.ndarray) -> dict:
     if err.size == 0:
         return {"n_kept": 0}
     a = np.abs(err)
-    return {"n_kept": int(err.size), "mae": float(a.mean()), "rmse": float(np.sqrt((err ** 2).mean())),
-            "med_abs": float(np.median(a)), "median_signed": float(np.median(err)),
-            "mean_signed": float(err.mean())}
+    return {
+        "n_kept": int(err.size),
+        "mae": float(a.mean()),
+        "rmse": float(np.sqrt((err**2).mean())),
+        "med_abs": float(np.median(a)),
+        "median_signed": float(np.median(err)),
+        "mean_signed": float(err.mean()),
+    }
 
 
 def summary(dirs: list[str], labels: list[str]) -> dict:
@@ -225,9 +245,11 @@ def summary(dirs: list[str], labels: list[str]) -> dict:
         res = {}
         for name, with_u in (("without_U", False), ("with_U", True)):
             sub = df[df["has_specific_TM"].astype(bool) == with_u]
-            res[name] = {**metrics(sub.loc[sub["kept"], "err"].to_numpy(float)),
-                         "n_results": int(len(sub)),
-                         "n_not_converged": int((~sub["converged"].astype(bool)).sum())}
+            res[name] = {
+                **metrics(sub.loc[sub["kept"], "err"].to_numpy(float)),
+                "n_results": int(len(sub)),
+                "n_not_converged": int((~sub["converged"].astype(bool)).sum()),
+            }
         out[label] = res
     seeds = [L for L in labels if L.lower().startswith("rdm")]
     if len(seeds) > 1:
@@ -270,8 +292,10 @@ def run(args: argparse.Namespace) -> None:
             print(f"== {split}   MAE / RMSE / median|err| (eV), n kept")
             for L, r in res.items():
                 m = r[split]
-                print(f"  {L:16s} {m.get('mae', np.nan):.3f} {m.get('rmse', np.nan):.3f} "
-                      f"{m.get('med_abs', np.nan):.3f}  n={m.get('n_kept', '-')}")
+                print(
+                    f"  {L:16s} {m.get('mae', np.nan):.3f} {m.get('rmse', np.nan):.3f} "
+                    f"{m.get('med_abs', np.nan):.3f}  n={m.get('n_kept', '-')}"
+                )
         return
     if not args.model:
         raise SystemExit("--model is required to run the benchmark")

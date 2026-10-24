@@ -34,8 +34,16 @@ class RadialEmbedding(nn.Module):
     The cutoff is applied to the raw distance r.
     """
 
-    def __init__(self, r_max: float = 6.0, num_bessel: int = 10, cutoff_p: int = 5,
-                 agnesi: bool = True, a: float = 1.0805, q: float = 0.9183, p: float = 4.5791):
+    def __init__(
+        self,
+        r_max: float = 6.0,
+        num_bessel: int = 10,
+        cutoff_p: int = 5,
+        agnesi: bool = True,
+        a: float = 1.0805,
+        q: float = 0.9183,
+        p: float = 4.5791,
+    ):
         super().__init__()
         dtype = torch.get_default_dtype()
         self.num_bessel = num_bessel
@@ -49,7 +57,9 @@ class RadialEmbedding(nn.Module):
         self.register_buffer("agnesi_p", torch.tensor(p, dtype=dtype))
         self.register_buffer("covalent_radii", torch.tensor(ase.data.covalent_radii, dtype=dtype))
 
-    def agnesi_transform(self, r: torch.Tensor, z_sender: torch.Tensor, z_receiver: torch.Tensor) -> torch.Tensor:
+    def agnesi_transform(
+        self, r: torch.Tensor, z_sender: torch.Tensor, z_receiver: torch.Tensor
+    ) -> torch.Tensor:
         r0 = 0.5 * (self.covalent_radii[z_sender] + self.covalent_radii[z_receiver]).unsqueeze(-1)
         x = r / r0
         q, p = self.agnesi_q, self.agnesi_p
@@ -79,8 +89,14 @@ class ZBLRepulsion(nn.Module):
         self.register_buffer("a_exp", torch.tensor(0.300, dtype=dtype))
         self.register_buffer("a_prefactor", torch.tensor(0.4543, dtype=dtype))
 
-    def forward(self, r: torch.Tensor, z_sender: torch.Tensor, z_receiver: torch.Tensor,
-                receiver: torch.Tensor, num_nodes: int) -> torch.Tensor:
+    def forward(
+        self,
+        r: torch.Tensor,
+        z_sender: torch.Tensor,
+        z_receiver: torch.Tensor,
+        receiver: torch.Tensor,
+        num_nodes: int,
+    ) -> torch.Tensor:
         # atomic numbers as floats of the input precision, independent of torch's default dtype
         zs = z_sender.to(r.dtype).unsqueeze(-1)
         zr = z_receiver.to(r.dtype).unsqueeze(-1)

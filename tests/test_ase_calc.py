@@ -24,8 +24,9 @@ def test_matches_the_batched_pipeline(val40, calc):
         atoms.calc = calc
         n = len(atoms)
         assert atoms.get_potential_energy() == pytest.approx(ref["energy"][g].item(), rel=1e-12)
-        assert np.allclose(atoms.get_forces(), ref["forces"][a0:a0 + n].detach().numpy(),
-                           rtol=1e-10, atol=1e-12)
+        assert np.allclose(
+            atoms.get_forces(), ref["forces"][a0 : a0 + n].detach().numpy(), rtol=1e-10, atol=1e-12
+        )
         s = ref["stress"][g].detach().numpy()
         voigt = np.array([s[0, 0], s[1, 1], s[2, 2], s[1, 2], s[0, 2], s[0, 1]])
         assert np.allclose(atoms.get_stress(), voigt, rtol=1e-10, atol=1e-13)
@@ -38,10 +39,8 @@ def test_forces_and_stress_are_derivatives_of_the_energy(val40, calc):
 
     atoms = val40.to_atoms(3)
     atoms.calc = calc
-    assert np.allclose(atoms.get_forces(), calculate_numerical_forces(atoms, eps=1e-5),
-                       atol=1e-6)
-    assert np.allclose(atoms.get_stress(), calculate_numerical_stress(atoms, eps=1e-6),
-                       atol=1e-7)
+    assert np.allclose(atoms.get_forces(), calculate_numerical_forces(atoms, eps=1e-5), atol=1e-6)
+    assert np.allclose(atoms.get_stress(), calculate_numerical_stress(atoms, eps=1e-6), atol=1e-7)
 
 
 def test_rebuilds_the_graph_after_a_move(val40, calc):

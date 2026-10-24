@@ -1,0 +1,30 @@
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  pytest:
+    # CPU only. Tests that need the authors' released model files (not part of
+    # the repository) or the GPU kernels skip themselves.
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+          enable-cache: true
+      - name: Fonts metric-compatible with Arial, so figure layout matches local renders
+        run: sudo apt-get install -y --no-install-recommends fonts-liberation
+      - name: Install (locked dependencies + dev group)
+        run: uv sync --locked
+      - name: Run tests
+        run: uv run pytest -q -ra

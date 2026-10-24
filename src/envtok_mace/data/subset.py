@@ -16,8 +16,11 @@ def add_arguments(p: argparse.ArgumentParser) -> None:
     p.add_argument("--dst", required=True)
     p.add_argument("--fraction", type=float, required=True, help="fraction of every sub-dataset to keep")
     p.add_argument("--seed", type=int, default=0)
-    p.add_argument("--complement", action="store_true",
-                   help="write every frame NOT in that subset (e.g. a held-out set never used for model selection)")
+    p.add_argument(
+        "--complement",
+        action="store_true",
+        help="write every frame NOT in that subset (e.g. a held-out set never used for model selection)",
+    )
 
 
 def run(args: argparse.Namespace) -> None:
@@ -26,7 +29,11 @@ def run(args: argparse.Namespace) -> None:
     if args.complement:
         idx = np.setdiff1d(np.arange(len(frames)), idx)
     sub = frames.subset(idx)
-    sub.attrs.update(subset_of=str(args.src), subset_fraction=args.fraction, subset_seed=args.seed,
-                     subset_complement=bool(args.complement))
+    sub.attrs.update(
+        subset_of=str(args.src),
+        subset_fraction=args.fraction,
+        subset_seed=args.seed,
+        subset_complement=bool(args.complement),
+    )
     sub.save(args.dst)
     print(f"wrote {len(sub):,} of {len(frames):,} frames -> {args.dst}", flush=True)

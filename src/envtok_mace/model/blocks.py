@@ -35,8 +35,9 @@ def conv_tp_instructions(irreps_node: o3.Irreps, irreps_sh: o3.Irreps, target: o
                     instructions.append((i, j, len(outs), "uvu", True))
                     outs.append((mul, ir_out))
     irreps_out, perm, _ = o3.Irreps(outs).sort()
-    instructions = sorted(((i, j, perm[k], mode, train) for i, j, k, mode, train in instructions),
-                          key=lambda ins: ins[2])
+    instructions = sorted(
+        ((i, j, perm[k], mode, train) for i, j, k, mode, train in instructions), key=lambda ins: ins[2]
+    )
     return irreps_out, instructions
 
 
@@ -69,8 +70,9 @@ class SymmetricContraction(nn.Module):
                 U = u_matrix(coupling, ir, nu, dtype=dtype)
                 self.register_buffer(f"U_{k}_{nu}", U)
                 num_paths = U.shape[-1]
-                self.weights.append(nn.Parameter(
-                    torch.randn(num_elements, num_paths, self.num_channels) / num_paths))
+                self.weights.append(
+                    nn.Parameter(torch.randn(num_elements, num_paths, self.num_channels) / num_paths)
+                )
 
     def U(self, k: int, nu: int) -> torch.Tensor:
         return getattr(self, f"U_{k}_{nu}")
@@ -110,10 +112,19 @@ class DensityInteraction(nn.Module):
     connection: an element-dependent linear map of the incoming node features.
     """
 
-    def __init__(self, irreps_node: o3.Irreps, irreps_sh: o3.Irreps, num_radial: int,
-                 target_irreps: o3.Irreps, num_elements: int, residual: bool,
-                 skip_irreps: o3.Irreps | None = None, radial_mlp: tuple[int, ...] = (64, 64, 64),
-                 backend: str = "e3nn", use_fallback: bool | None = None):
+    def __init__(
+        self,
+        irreps_node: o3.Irreps,
+        irreps_sh: o3.Irreps,
+        num_radial: int,
+        target_irreps: o3.Irreps,
+        num_elements: int,
+        residual: bool,
+        skip_irreps: o3.Irreps | None = None,
+        radial_mlp: tuple[int, ...] = (64, 64, 64),
+        backend: str = "e3nn",
+        use_fallback: bool | None = None,
+    ):
         super().__init__()
         irreps_node, target_irreps = o3.Irreps(irreps_node), o3.Irreps(target_irreps)
         attrs = o3.Irreps(f"{num_elements}x0e")
@@ -122,14 +133,18 @@ class DensityInteraction(nn.Module):
         fb = use_fallback
         self.linear_up = backends.linear(irreps_node, irreps_node, backend, fb)
         irreps_mid, instructions = conv_tp_instructions(irreps_node, irreps_sh, target_irreps)
-        self.conv_tp = backends.MessageTP(irreps_node, irreps_sh, irreps_mid, instructions, target_irreps,
-                                          backend, fb)
+        self.conv_tp = backends.MessageTP(
+            irreps_node, irreps_sh, irreps_mid, instructions, target_irreps, backend, fb
+        )
         self.conv_tp_weights = e3nn_nn.FullyConnectedNet(
-            [num_radial, *radial_mlp, self.conv_tp.weight_numel], torch.nn.functional.silu)
+            [num_radial, *radial_mlp, self.conv_tp.weight_numel], torch.nn.functional.silu
+        )
         self.linear = backends.linear(irreps_mid, target_irreps, backend, fb)
         self.density_fn = e3nn_nn.FullyConnectedNet([num_radial, 1], torch.nn.functional.silu)
         if residual:
-            self.skip_tp = backends.fully_connected_tp(irreps_node, attrs, o3.Irreps(skip_irreps), backend, fb)
+            self.skip_tp = backends.fully_connected_tp(
+                irreps_node, attrs, o3.Irreps(skip_irreps), backend, fb
+            )
         else:
             self.skip_tp = backends.fully_connected_tp(target_irreps, attrs, target_irreps, backend, fb)
         self._dims = [(mul, ir.dim) for mul, ir in target_irreps]
@@ -138,7 +153,7 @@ class DensityInteraction(nn.Module):
         """[N, irreps] -> [N, C, D] with all irreps of a channel side by side."""
         blocks, start = [], 0
         for mul, d in self._dims:
-            blocks.append(x[:, start:start + mul * d].reshape(x.shape[0], mul, d))
+            blocks.append(x[:, start : start + mul * d].reshape(x.shape[0], mul, d))
             start += mul * d
         return torch.cat(blocks, dim=-1)
 
@@ -159,11 +174,19 @@ class DensityInteraction(nn.Module):
 class ProductBasis(nn.Module):
     """Symmetric contraction followed by a linear mix, plus the skip connection."""
 
-    def __init__(self, irreps_in: o3.Irreps, irreps_out: o3.Irreps, correlation: int, num_elements: int,
-                 backend: str = "e3nn", use_fallback: bool | None = None):
+    def __init__(
+        self,
+        irreps_in: o3.Irreps,
+        irreps_out: o3.Irreps,
+        correlation: int,
+        num_elements: int,
+        backend: str = "e3nn",
+        use_fallback: bool | None = None,
+    ):
         super().__init__()
-        self.symmetric_contraction = backends.symmetric_contraction(irreps_in, irreps_out, correlation,
-                                                                    num_elements, backend, use_fallback)
+        self.symmetric_contraction = backends.symmetric_contraction(
+            irreps_in, irreps_out, correlation, num_elements, backend, use_fallback
+        )
         self.linear = backends.linear(irreps_out, irreps_out, backend, use_fallback)
 
     def forward(self, x: torch.Tensor, node_attrs: torch.Tensor, sc: torch.Tensor | None) -> torch.Tensor:

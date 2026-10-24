@@ -8,8 +8,9 @@ from pathlib import Path
 
 
 class Tracker:
-    def __init__(self, out_dir: str | Path, enabled: bool, config: dict, use_wandb: bool = False,
-                 run_name: str = "run"):
+    def __init__(
+        self, out_dir: str | Path, enabled: bool, config: dict, use_wandb: bool = False, run_name: str = "run"
+    ):
         self.enabled = enabled
         self.out_dir = Path(out_dir)
         self._files: dict[str, tuple] = {}
@@ -22,8 +23,14 @@ class Tracker:
             try:
                 import wandb
 
-                self._wandb = wandb.init(project="envtok-mace", name=run_name, config=config,
-                                         dir=str(self.out_dir), mode="offline", resume="allow")
+                self._wandb = wandb.init(
+                    project="envtok-mace",
+                    name=run_name,
+                    config=config,
+                    dir=str(self.out_dir),
+                    mode="offline",
+                    resume="allow",
+                )
             except Exception as exc:  # logging must never stop training
                 print(f"wandb disabled: {exc}", flush=True)
 
@@ -39,7 +46,9 @@ class Tracker:
                 with open(path, newline="") as f:
                     fieldnames = next(csv.reader(f))
             fh = open(path, "a", newline="")
-            writer = csv.DictWriter(fh, fieldnames=fieldnames, extrasaction="ignore", restval="")
+            writer = csv.DictWriter(
+                fh, fieldnames=fieldnames, extrasaction="ignore", restval="", lineterminator="\n"
+            )
             if new:
                 writer.writeheader()
             self._files[table] = (fh, writer)

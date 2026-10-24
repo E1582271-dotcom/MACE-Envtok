@@ -1,0 +1,58 @@
+cff-version: 1.2.0
+message: >-
+  If you use this software, please cite it as below, together with the paper
+  it reproduces (listed under references).
+title: "MACE-Envtok: a from-scratch MACE implementation trained with multi-node DDP on the EnvTok subset of OMat24"
+type: software
+authors:
+  - family-names: Jia
+    given-names: Jieao
+version: 0.9.0
+license: MIT
+repository-code: "https://github.com/E1582271-dotcom/MACE-Envtok"
+keywords:
+  - machine-learning interatomic potentials
+  - MACE
+  - equivariant neural networks
+  - PyTorch
+  - distributed data parallel
+  - OMat24
+  - materials science
+references:
+  - type: article
+    title: "Atoms that Matter: Largest Materials Datasets Are 99% Redundant, and Local Chemistry Can Guide the Required 1%"
+    authors:
+      - family-names: Moerman
+        given-names: E.
+      - family-names: Poltavsky
+        given-names: I.
+      - family-names: Charkin-Gorbulin
+        given-names: A.
+      - family-names: Tkatchenko
+        given-names: A.
+    year: 2026
+    identifiers:
+      - type: other
+        value: "arXiv:2610.14392"
+        description: arXiv preprint
+    url: "https://arxiv.org/abs/2610.14392"
+  - type: article
+    title: "MACE: Higher Order Equivariant Message Passing Neural Networks for Fast and Accurate Force Fields"
+    authors:
+      - family-names: Batatia
+        given-names: I.
+      - name: "et al."
+    year: 2022
+    conference:
+      name: "Advances in Neural Information Processing Systems (NeurIPS)"
+  - type: article
+    title: "Open Materials 2024 (OMat24) Inorganic Materials Dataset and Models"
+    authors:
+      - family-names: Barroso-Luque
+        given-names: L.
+      - name: "et al."
+    year: 2024
+    identifiers:
+      - type: other
+        value: "arXiv:2410.12771"
+        description: arXiv preprint
