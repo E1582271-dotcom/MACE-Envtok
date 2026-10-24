@@ -16,6 +16,7 @@ import torch
 
 from ..data.frames import Frames
 from ..data.samplers import eval_shards
+from ..model.backends import load_weights
 from ..model.mace import MACE, MACEConfig
 from .metrics import evaluate
 
@@ -46,7 +47,7 @@ def load_model(path: str, device: torch.device, dtype: torch.dtype, backend: str
             names = [n for n, p in model.named_parameters() if p.requires_grad]
             weights = dict(weights)
             weights.update(dict(zip(names, state["ema"]["shadow"])))
-        model.load_state_dict(weights)
+        load_weights(model, weights)
         if backend is not None and backend != trained_backend:
             from ..model.backends import convert_state_dict
 
