@@ -199,3 +199,21 @@ def test_compare_per_atom_round_trip(tmp_path, val40, envtok_model_path):
     assert report["atom_order_matches"]
     assert report["n_atoms"] == int(val40.atom_ptr[-1])
     assert report["max_abs_d_err_norm_eV_per_A"] < 1e-9
+
+
+def test_exceedance_is_the_atom_weighted_tail():
+    runs = {
+        "m": {
+            "f_mae_comp": np.array([0.010, 0.100, 1.000, np.inf]),  # eV/A; inf = blow-up
+            "natoms": np.array([1, 1, 2, 4]),
+        }
+    }
+    domain = np.array(["bulk", "bulk", "bulk", "non_bulk"])
+    rows = bench.exceedance(runs, domain, points_per_decade=1, lo_meV=1.0, hi_meV=1e4)
+    bulk = {r["threshold_meV_per_A"]: r["m"] for r in rows if r["domain"] == "bulk"}
+    assert bulk[1.0] == pytest.approx(1.0)  # every atom above 1 meV/A
+    assert bulk[10.0] == pytest.approx(0.75)  # the 10 meV/A structure is not above 10
+    assert bulk[100.0] == pytest.approx(0.5)
+    assert bulk[1e4] == pytest.approx(0.0)
+    non_bulk = [r["m"] for r in rows if r["domain"] == "non_bulk"]
+    assert non_bulk == pytest.approx([1.0] * len(non_bulk))  # a lone blow-up stays the worst
