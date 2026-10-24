@@ -57,6 +57,7 @@ enough to attribute them.
   - [MD stability](#md-stability)
   - [Li-ion migration barriers](#li-ion-migration-barriers-nebdft2k)
   - [Error and distance from the training data](#error-and-distance-from-the-training-data)
+- [Trained model](#trained-model)
 - [What is implemented](#what-is-implemented)
 - [Reproduce](#reproduce)
 - [Repository layout](#repository-layout)
@@ -227,6 +228,28 @@ and all benchmarks are collected by distance from the training data in
   <img src="results/figures/latent_distance.svg" width="100%" alt="Share of atoms and median force error against latent-space distance decile, for this work and the authors' EnvTok model">
 </p>
 
+## Trained model
+
+The weights are attached to the
+[v1.0.0 release](https://github.com/E1582271-dotcom/MACE-Envtok/releases/tag/v1.0.0)
+as `mace-envtok-1.0.0.pt` (35 MB). They are the best epoch (656) of the run
+above, the weights every reported number was computed with. The file uses the
+e3nn backend, which needs only the base dependencies and runs on CPU:
+
+```python
+import torch
+from envtok_mace.eval.run_eval import load_model
+from envtok_mace.eval.ase_calc import EnvTokCalculator
+
+model = load_model("mace-envtok-1.0.0.pt", torch.device("cpu"), torch.float64)
+# on a GPU with the cueq extra installed: backend="cueq" for the fused kernels
+atoms.calc = EnvTokCalculator(model, device="cpu", dtype="float64")   # any ASE Atoms
+```
+
+It covers the 68 elements left in OMat24 after removing the lanthanides and
+actinides (Z = 1–56, 72–83). Its energies are on the OMat24 PBE(+U) footing,
+like those of MACE-OMAT-0.
+
 ## What is implemented
 
 | Part | Where | Checked by |
@@ -281,7 +304,7 @@ src/envtok_mace/   data/ model/ train/ eval/ bench/ analysis/ plots/, and the CL
 configs/train/     training configurations (CPU debug, 8-GPU pilot, full run)
 scripts/           data download and NSCC job scripts
 tests/             unit, parity, distributed and figure tests; 40 OMat24 structures as fixtures
-docs/              plan, parity, cluster notes, benchmark protocols
+docs/              parity, cluster notes, benchmark protocols
 results/           every reported number and figure, small files only
 ```
 
@@ -320,6 +343,7 @@ Zenodo (CC BY 4.0).
 
 ## License
 
-The code is released under the MIT license ([LICENSE](LICENSE)). Datasets and
-third-party results keep their own licenses. The test fixtures are OMat24
-structures (CC BY 4.0).
+The code is released under the MIT license ([LICENSE](LICENSE)). The trained
+weights are released under CC BY 4.0, like the OMat24 data they were trained on.
+Datasets and third-party results keep their own licenses. The test fixtures are
+OMat24 structures (CC BY 4.0).

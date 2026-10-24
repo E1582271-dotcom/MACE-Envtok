@@ -6,6 +6,37 @@ All notable changes to this project are recorded here. The format follows
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-10-24
+
+Public release with the trained weights.
+
+### Added
+
+- **Weights.** Trained weights attached to the release as `mace-envtok-1.0.0.pt`
+  (CC BY 4.0), in the e3nn format that needs only the base dependencies.
+  `load_model(path, backend="cueq")` converts them for the GPU kernels.
+- **`envtok-mace export-weights`**, which writes a training checkpoint as such a
+  portable file, with its provenance.
+
+### Fixed
+
+- A checkpoint written on a GPU node now loads on a machine without
+  cuEquivariance's GPU kernels.
+  - The kernels change which derived constants cuEquivariance registers, and
+    loading was strict about them.
+  - These constants are no longer read from checkpoints at all. A saved copy
+    carries the float32 precision it was built in, which put errors of up to
+    2e-7 relative into float64 runs. The float64 MD-stability and NEB runs made
+    on the cluster with the cuEquivariance backend carry these errors, which are
+    below the precision of every reported number.
+- Every font in the SVG figures now falls back to a sans-serif face, so viewers
+  without Arial do not see a serif fallback.
+
+### Removed
+
+- The working plan (`docs/PLAN.md`) from the repository; the README and `docs/`
+  describe the project as built.
+
 ## [0.9.0] - 2026-10-24
 
 First complete state: the model is implemented, trained and evaluated on every
@@ -49,5 +80,6 @@ benchmark of the reproduced paper. Kept private until the 1.0.0 release.
   calculation NaN with phonopy 4.1.0), one worker per GPU against
   out-of-memory failures, and every calculator exception is logged.
 
-[Unreleased]: https://github.com/E1582271-dotcom/MACE-Envtok/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/E1582271-dotcom/MACE-Envtok/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/E1582271-dotcom/MACE-Envtok/releases/tag/v1.0.0
 [0.9.0]: https://github.com/E1582271-dotcom/MACE-Envtok/releases/tag/v0.9.0
