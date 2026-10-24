@@ -153,6 +153,9 @@ def run_benchmark(args: argparse.Namespace) -> None:
     work = npt_worklist(load_rm24(args.db), args.n_npt)
     if args.limit:
         work = work[:args.limit]
+    # Shard only what is left, so a rerun of a few runs spreads over all GPUs.
+    work = [(i, a) for i, a in work
+            if not traj_path(out, args.label, i, a).with_suffix(".done").exists()]
     calc = EnvTokCalculator(args.model, device=device, dtype=args.dtype, backend=args.backend)
     for idx, atoms in work[rank::world]:
         t0 = time.time()

@@ -152,6 +152,8 @@ def run_benchmark(args: argparse.Namespace) -> None:
     work = worklist(cache)
     if args.limit:
         work = work[:args.limit]
+    # Shard only the hops that are left, so a rerun spreads over all workers.
+    work = [r for r in work if not (out / f"{args.label}_{r['edge_id']}.done").exists()]
     k = args.workers
     shards = [(rank * k + i, world * k) for i in range(k)]
     if k == 1:
