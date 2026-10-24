@@ -21,6 +21,7 @@ COMMANDS = {
     "ref-eval": ("envtok_mace.eval.reference", "evaluate a reference mace-torch model on a Frames file"),
     "train": ("envtok_mace.train.run", "train a model (one process per GPU)"),
     "eval": ("envtok_mace.eval.run_eval", "score checkpoints / mace-torch models on a Frames file"),
+    "export-weights": ("envtok_mace.eval.export", "write a checkpoint as a portable (e3nn) weights file"),
     "bench-speed": ("envtok_mace.bench.speed", "training-step throughput, ours vs mace-torch"),
     "bench-allreduce": ("envtok_mace.bench.allreduce", "all-reduce bandwidth between ranks"),
     "check-backends": ("envtok_mace.bench.backend_check", "e3nn vs cuEquivariance outputs on a GPU"),
