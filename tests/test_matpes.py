@@ -202,13 +202,17 @@ def test_compare_per_atom_round_trip(tmp_path, val40, envtok_model_path):
 
 
 def test_exceedance_is_the_atom_weighted_tail():
-    runs = {"m": {"f_mae_comp": np.array([0.010, 0.100, 1.000, np.inf]),   # eV/A; inf = blow-up
-                  "natoms": np.array([1, 1, 2, 4])}}
+    runs = {
+        "m": {
+            "f_mae_comp": np.array([0.010, 0.100, 1.000, np.inf]),  # eV/A; inf = blow-up
+            "natoms": np.array([1, 1, 2, 4]),
+        }
+    }
     domain = np.array(["bulk", "bulk", "bulk", "non_bulk"])
     rows = bench.exceedance(runs, domain, points_per_decade=1, lo_meV=1.0, hi_meV=1e4)
     bulk = {r["threshold_meV_per_A"]: r["m"] for r in rows if r["domain"] == "bulk"}
-    assert bulk[1.0] == pytest.approx(1.0)        # every atom above 1 meV/A
-    assert bulk[10.0] == pytest.approx(0.75)      # the 10 meV/A structure is not above 10
+    assert bulk[1.0] == pytest.approx(1.0)  # every atom above 1 meV/A
+    assert bulk[10.0] == pytest.approx(0.75)  # the 10 meV/A structure is not above 10
     assert bulk[100.0] == pytest.approx(0.5)
     assert bulk[1e4] == pytest.approx(0.0)
     non_bulk = [r["m"] for r in rows if r["domain"] == "non_bulk"]

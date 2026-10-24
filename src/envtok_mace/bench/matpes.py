@@ -296,15 +296,21 @@ def write_tables(result: dict, out_dir: str | Path, scale: float = 1e3) -> None:
     print(f"wrote {len(result['metrics']) * len(DOMAIN_ORDER)} tables -> {out_dir}", flush=True)
 
 
-def exceedance(runs: dict[str, dict], domain: np.ndarray, points_per_decade: int = 20,
-               lo_meV: float = 1.0, hi_meV: float = 1e6) -> list[dict]:
+def exceedance(
+    runs: dict[str, dict],
+    domain: np.ndarray,
+    points_per_decade: int = 20,
+    lo_meV: float = 1.0,
+    hi_meV: float = 1e6,
+) -> list[dict]:
     """Share of a domain's atoms in structures whose force MAE exceeds each threshold.
 
     The tail of the error distribution, atom-weighted as the pooled tables are:
     one row per domain and threshold, one column per model.
     """
-    grid = np.logspace(np.log10(lo_meV), np.log10(hi_meV),
-                       int(round(points_per_decade * np.log10(hi_meV / lo_meV))) + 1)
+    grid = np.logspace(
+        np.log10(lo_meV), np.log10(hi_meV), int(round(points_per_decade * np.log10(hi_meV / lo_meV))) + 1
+    )
     rows = []
     for dk in ("bulk", "non_bulk"):
         m = domain == dk
@@ -319,15 +325,16 @@ def exceedance(runs: dict[str, dict], domain: np.ndarray, points_per_decade: int
             below = np.searchsorted(e, grid, side="right")
             cols[L] = 1.0 - np.where(below > 0, cw[np.maximum(below - 1, 0)], 0.0) / cw[-1]
         for i, g in enumerate(grid):
-            rows.append({"domain": dk, "threshold_meV_per_A": float(g),
-                         **{L: float(c[i]) for L, c in cols.items()}})
+            rows.append(
+                {"domain": dk, "threshold_meV_per_A": float(g), **{L: float(c[i]) for L, c in cols.items()}}
+            )
     return rows
 
 
 def write_exceedance(rows: list[dict], out_dir: str | Path) -> None:
     path = Path(out_dir) / "f_mae_comp_exceedance.csv"
     with path.open("w", newline="") as fh:
-        w = csv.DictWriter(fh, fieldnames=list(rows[0]))
+        w = csv.DictWriter(fh, fieldnames=list(rows[0]), lineterminator="\n")
         w.writeheader()
         for r in rows:
             w.writerow({k: (f"{v:.6g}" if isinstance(v, float) else v) for k, v in r.items()})

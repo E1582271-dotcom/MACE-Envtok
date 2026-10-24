@@ -370,19 +370,22 @@ def summary(dirs: list[str], labels: list[str], n_npt: int = 80, speed_ref: str 
     return out
 
 
-def runs_table(dirs: list[str], labels: list[str], n_npt: int = 80,
-               speed_ref: str | None = None):
+def runs_table(dirs: list[str], labels: list[str], n_npt: int = 80, speed_ref: str | None = None):
     """Every NPT run of every model with its outcome and how far it got, plus the
     speed-matched runs as ``<label>@speed_of_<ref>``."""
     import pandas as pd
 
     per = {L: classify(d, n_npt) for L, d in zip(labels, dirs)}
     if speed_ref:
-        per.update({f"{L}@speed_of_{speed_ref}": speed_matched(per[L], per[speed_ref])
-                    for L in labels if L != speed_ref})
+        per.update(
+            {
+                f"{L}@speed_of_{speed_ref}": speed_matched(per[L], per[speed_ref])
+                for L in labels
+                if L != speed_ref
+            }
+        )
     cols = ["idx", "natoms", "outcome", "nfs"]
-    return pd.concat([p[cols].assign(model=L) for L, p in per.items()],
-                     ignore_index=True)[["model", *cols]]
+    return pd.concat([p[cols].assign(model=L) for L, p in per.items()], ignore_index=True)[["model", *cols]]
 
 
 # -------------------------------------------------------------------------- CLI
@@ -416,9 +419,12 @@ def run(args: argparse.Namespace) -> None:
         Path(args.out).mkdir(parents=True, exist_ok=True)
         (Path(args.out) / "stability_summary.json").write_text(json.dumps(res, indent=1))
         runs_table(args.summary, labels, args.n_npt, args.speed_ref).to_csv(
-            Path(args.out) / "stability_runs.csv", index=False, float_format="%.4f")
-        print(f"{'model':36s} {'complete%':>9s} {'survived':>8s} {'diverged':>8s} {'oom':>4s} "
-              f"{'other':>5s} {'trunc':>5s} {'first end ps':>12s}")
+            Path(args.out) / "stability_runs.csv", index=False, float_format="%.4f"
+        )
+        print(
+            f"{'model':36s} {'complete%':>9s} {'survived':>8s} {'diverged':>8s} {'oom':>4s} "
+            f"{'other':>5s} {'trunc':>5s} {'first end ps':>12s}"
+        )
         for L, r in res.items():
             print(
                 f"{L:36s} {r['mean_completion_pct']:9.1f} {r['n_survived']:8d} "

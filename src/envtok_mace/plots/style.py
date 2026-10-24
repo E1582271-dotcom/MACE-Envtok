@@ -24,8 +24,15 @@ from __future__ import annotations
 
 from contextlib import contextmanager
 
-INK = {"ink": "#272727", "ink2": "#4d4d4d", "muted": "#767676", "frame": "#4d4d4d",
-       "grid": "#e6e6e6", "surface": "#ffffff", "chip": "#ededed"}
+INK = {
+    "ink": "#272727",
+    "ink2": "#4d4d4d",
+    "muted": "#767676",
+    "frame": "#4d4d4d",
+    "grid": "#e6e6e6",
+    "surface": "#ffffff",
+    "chip": "#ededed",
+}
 
 # model -> label, colours, marker; the order is the legend order (dark to light)
 MODELS: dict[str, dict] = {
@@ -33,23 +40,27 @@ MODELS: dict[str, dict] = {
     "authors_direct": {"label": "Authors, DIRECT", "color": "#8b4643", "edge": "#ffffff", "marker": "^"},
     "authors_envtok": {"label": "Authors, EnvTok", "color": "#6a8cb3", "edge": "#ffffff", "marker": "s"},
     "random": {"label": "Authors, random (4 seeds)", "color": "#bebebe", "edge": "#717171", "marker": "D"},
-    "mace_omat0": {"label": "MACE-OMAT-0 (all of OMat24)", "color": "#4d4d4d", "marker": None,
-                   "linestyle": (0, (4, 2.5))},
+    "mace_omat0": {
+        "label": "MACE-OMAT-0 (all of OMat24)",
+        "color": "#4d4d4d",
+        "marker": None,
+        "linestyle": (0, (4, 2.5)),
+    },
 }
 
 # test data ordered by distance from training; shown as text chips and line styles, never as colour
 DISTANCE = {"ID": "in distribution", "SHIFT": "dataset shift", "OOD": "out of distribution"}
 DISTANCE_LINESTYLE = {"ID": "-", "SHIFT": (0, (5, 2)), "OOD": (0, (1.2, 1.6))}
 
-SINGLE_COLUMN_IN = 3.5    # 89 mm
-DOUBLE_COLUMN_IN = 7.2    # 183 mm
+SINGLE_COLUMN_IN = 3.5  # 89 mm
+DOUBLE_COLUMN_IN = 7.2  # 183 mm
 LINE_PT = 1.25
 MARKER_PT = 5.5
 EDGE_PT = 0.7
 
 
 ONE_HALF_COLUMN_IN = 5.35  # 136 mm
-SEED_LINE = "#a8a8a8"     # lines of the random seeds: one step darker than their markers
+SEED_LINE = "#a8a8a8"  # lines of the random seeds: one step darker than their markers
 
 
 def color(model: str) -> str:
@@ -64,28 +75,52 @@ def line_color(model: str) -> str:
 def rc_params() -> dict:
     return {
         "font.family": "sans-serif",
-        "font.sans-serif": ["Arial", "Helvetica", "DejaVu Sans", "Liberation Sans"],
-        "svg.fonttype": "none", "pdf.fonttype": 42,
-        "font.size": 7, "axes.titlesize": 7.5, "axes.labelsize": 7,
-        "xtick.labelsize": 6.5, "ytick.labelsize": 6.5, "legend.fontsize": 6.5,
-        "figure.facecolor": INK["surface"], "axes.facecolor": INK["surface"],
+        "font.sans-serif": ["Arial", "Helvetica", "Liberation Sans", "DejaVu Sans"],
+        "svg.fonttype": "none",
+        "svg.hashsalt": "mace-envtok",  # stable element ids in the SVG files
+        "pdf.fonttype": 42,
+        "font.size": 7,
+        "axes.titlesize": 7.5,
+        "axes.labelsize": 7,
+        "xtick.labelsize": 6.5,
+        "ytick.labelsize": 6.5,
+        "legend.fontsize": 6.5,
+        "figure.facecolor": INK["surface"],
+        "axes.facecolor": INK["surface"],
         "savefig.facecolor": INK["surface"],
-        "text.color": INK["ink"], "axes.labelcolor": INK["ink"], "axes.titlecolor": INK["ink"],
-        "xtick.color": INK["frame"], "ytick.color": INK["frame"],
-        "xtick.labelcolor": INK["ink2"], "ytick.labelcolor": INK["ink2"],
+        "text.color": INK["ink"],
+        "axes.labelcolor": INK["ink"],
+        "axes.titlecolor": INK["ink"],
+        "xtick.color": INK["frame"],
+        "ytick.color": INK["frame"],
+        "xtick.labelcolor": INK["ink2"],
+        "ytick.labelcolor": INK["ink2"],
         # closed frame: all four spines, ticks only bottom/left, outward
-        "axes.edgecolor": INK["frame"], "axes.linewidth": 0.6,
-        "axes.spines.top": True, "axes.spines.right": True,
-        "xtick.top": False, "ytick.right": False,
-        "xtick.direction": "out", "ytick.direction": "out",
-        "xtick.major.size": 2.5, "ytick.major.size": 2.5,
-        "xtick.major.width": 0.6, "ytick.major.width": 0.6,
-        "axes.grid": False, "grid.color": INK["grid"], "grid.linewidth": 0.4, "grid.linestyle": "-",
+        "axes.edgecolor": INK["frame"],
+        "axes.linewidth": 0.6,
+        "axes.spines.top": True,
+        "axes.spines.right": True,
+        "xtick.top": False,
+        "ytick.right": False,
+        "xtick.direction": "out",
+        "ytick.direction": "out",
+        "xtick.major.size": 2.5,
+        "ytick.major.size": 2.5,
+        "xtick.major.width": 0.6,
+        "ytick.major.width": 0.6,
+        "axes.grid": False,
+        "grid.color": INK["grid"],
+        "grid.linewidth": 0.4,
+        "grid.linestyle": "-",
         "axes.axisbelow": True,
-        "lines.linewidth": LINE_PT, "lines.solid_capstyle": "round", "lines.solid_joinstyle": "round",
+        "lines.linewidth": LINE_PT,
+        "lines.solid_capstyle": "round",
+        "lines.solid_joinstyle": "round",
         "lines.markersize": MARKER_PT,
-        "legend.frameon": False, "legend.handlelength": 1.6,
-        "savefig.bbox": "tight", "savefig.pad_inches": 0.03,
+        "legend.frameon": False,
+        "legend.handlelength": 1.6,
+        "savefig.bbox": "tight",
+        "savefig.pad_inches": 0.03,
     }
 
 
