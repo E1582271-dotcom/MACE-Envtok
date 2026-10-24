@@ -144,8 +144,11 @@ def extract(
                 if frames is not None:
                     parts.append(frames)
                 if i % max(1, len(tasks) // 50) == 0 or i == len(tasks):
-                    print(f"  {i}/{len(tasks)} chunks, scanned {stats['scanned']:,}, "
-                          f"kept {stats['kept']:,} ({time.time() - t0:.0f} s)", flush=True)
+                    print(
+                        f"  {i}/{len(tasks)} chunks, scanned {stats['scanned']:,}, "
+                        f"kept {stats['kept']:,} ({time.time() - t0:.0f} s)",
+                        flush=True,
+                    )
     else:
         _init_worker(ids_arg)
         for frames, st in map(_scan_chunk, tasks):
@@ -179,9 +182,12 @@ def extract(
         dropped_other_element=int(stats["dropped_other_element"]),
     )
     frames.save(out)
-    print(f"wrote {len(frames):,} frames, {int(frames.atom_ptr[-1]):,} atoms -> {out}  "
-          f"(dropped {stats['dropped_rare_earth']:,} rare-earth, "
-          f"{stats['dropped_other_element']:,} other; {time.time() - t0:.0f} s)", flush=True)
+    print(
+        f"wrote {len(frames):,} frames, {int(frames.atom_ptr[-1]):,} atoms -> {out}  "
+        f"(dropped {stats['dropped_rare_earth']:,} rare-earth, "
+        f"{stats['dropped_other_element']:,} other; {time.time() - t0:.0f} s)",
+        flush=True,
+    )
     return frames
 
 
@@ -189,7 +195,9 @@ def add_arguments(p: argparse.ArgumentParser) -> None:
     p.add_argument("--omat-dir", required=True, help="directory searched recursively for *.aselmdb")
     p.add_argument("--out", required=True, help="output Frames HDF5 file")
     p.add_argument("--ids", default=None, help="text file of sids to keep (default: keep all)")
-    p.add_argument("--expect", type=int, default=None, help="fail unless exactly this many frames are written")
+    p.add_argument(
+        "--expect", type=int, default=None, help="fail unless exactly this many frames are written"
+    )
     p.add_argument("--workers", type=int, default=1)
     p.add_argument("--chunk-rows", type=int, default=50_000)
 

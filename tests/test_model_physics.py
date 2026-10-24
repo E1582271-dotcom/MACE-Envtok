@@ -1,4 +1,5 @@
 """Symmetries and derivative consistency of the model (small random model, float64)."""
+
 import numpy as np
 import pytest
 import torch
@@ -27,10 +28,15 @@ def _single(positions, numbers, cell, pbc=(True, True, True), energy=0.0):
     ei, us = radius_graph(positions, cell, np.array(pbc), R_MAX)
     n = len(numbers)
     return Batch(
-        positions=torch.tensor(positions), numbers=torch.tensor(numbers, dtype=torch.long),
-        batch=torch.zeros(n, dtype=torch.long), edge_index=torch.tensor(ei, dtype=torch.long),
-        unit_shifts=torch.tensor(us, dtype=torch.float64), cell=torch.tensor(cell)[None],
-        natoms=torch.tensor([n]), energy=torch.tensor([energy]), forces=torch.zeros(n, 3),
+        positions=torch.tensor(positions),
+        numbers=torch.tensor(numbers, dtype=torch.long),
+        batch=torch.zeros(n, dtype=torch.long),
+        edge_index=torch.tensor(ei, dtype=torch.long),
+        unit_shifts=torch.tensor(us, dtype=torch.float64),
+        cell=torch.tensor(cell)[None],
+        natoms=torch.tensor([n]),
+        energy=torch.tensor([energy]),
+        forces=torch.zeros(n, 3),
         stress=torch.zeros(1, 3, 3),
     )
 
@@ -90,9 +96,11 @@ def test_stress_matches_finite_strain(model, val40):
     for i, j in [(0, 0), (1, 2), (2, 2)]:
         eps = np.zeros((3, 3))
         eps[i, j] = eps[j, i] = h / (2 if i != j else 1)
+
         def energy(sign, eps=eps):
             d = np.eye(3) + sign * eps
             return model(_single(pos @ d, z, cell @ d), compute_force=False)["energy"].item()
+
         de = (energy(+1) - energy(-1)) / (2 * h)
         assert stress[i, j] == pytest.approx(de / volume, rel=1e-5, abs=1e-9)
 
@@ -106,7 +114,7 @@ def test_batched_equals_single(model, val40):
         torch.testing.assert_close(out["stress"][k], single["stress"][0], rtol=1e-10, atol=1e-12)
     a0, a1 = batch.natoms[:2].tolist()
     single1 = model(collate(val40, [1]).to(dtype=torch.float64))
-    torch.testing.assert_close(out["forces"][a0:a0 + a1], single1["forces"], rtol=1e-10, atol=1e-12)
+    torch.testing.assert_close(out["forces"][a0 : a0 + a1], single1["forces"], rtol=1e-10, atol=1e-12)
 
 
 @pytest.mark.parametrize("z", [57, 84, 92, 118])

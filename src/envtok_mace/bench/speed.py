@@ -36,8 +36,9 @@ def _make_model(impl: str, device: torch.device):
     return ref, mace_input_dict
 
 
-def benchmark(frames: Frames, impl: str, batch_size: int, steps: int, warmup: int, device: torch.device,
-              seed: int = 0) -> dict:
+def benchmark(
+    frames: Frames, impl: str, batch_size: int, steps: int, warmup: int, device: torch.device, seed: int = 0
+) -> dict:
     torch.set_default_dtype(torch.float32)
     model, to_mace = _make_model(impl, device)
     opt = torch.optim.Adam(model.parameters(), lr=1e-4, amsgrad=True)
@@ -68,8 +69,12 @@ def benchmark(frames: Frames, impl: str, batch_size: int, steps: int, warmup: in
         torch.cuda.synchronize(device)
     dt = time.perf_counter() - t0
     return {
-        "impl": impl, "batch_size": batch_size, "steps": steps,
-        "seconds_per_step": dt / steps, "structures_per_s": n_structs / dt, "atoms_per_s": n_atoms / dt,
+        "impl": impl,
+        "batch_size": batch_size,
+        "steps": steps,
+        "seconds_per_step": dt / steps,
+        "structures_per_s": n_structs / dt,
+        "atoms_per_s": n_atoms / dt,
         "peak_mem_GB": torch.cuda.max_memory_allocated(device) / 1e9 if device.type == "cuda" else 0.0,
     }
 
@@ -87,11 +92,22 @@ def add_arguments(p: argparse.ArgumentParser) -> None:
 def run(args: argparse.Namespace) -> None:
     device = torch.device(args.device)
     frames = Frames.load(args.frames)
-    print(json.dumps({"frames": len(frames), "mean_atoms": float(frames.natoms.mean()),
-                      "mean_edges": float(frames.nedges.mean())}), flush=True)
+    print(
+        json.dumps(
+            {
+                "frames": len(frames),
+                "mean_atoms": float(frames.natoms.mean()),
+                "mean_edges": float(frames.nedges.mean()),
+            }
+        ),
+        flush=True,
+    )
     for impl in args.impl:
         try:
-            print(json.dumps(benchmark(frames, impl, args.batch_size, args.steps, args.warmup, device)), flush=True)
+            print(
+                json.dumps(benchmark(frames, impl, args.batch_size, args.steps, args.warmup, device)),
+                flush=True,
+            )
         except Exception as exc:
             print(json.dumps({"impl": impl, "error": repr(exc)}), flush=True)
     if args.profile:
@@ -110,11 +126,17 @@ def profile_ours(frames: Frames, batch_size: int, device: torch.device, backend:
     model = MACE(MACEConfig(backend=backend)).to(device)
     cfg = LossConfig()
     rng = np.random.default_rng(1)
-    batches = [collate(frames, np.sort(rng.choice(len(frames), batch_size, replace=False)))
-               .to(device=device, dtype=torch.float32) for _ in range(steps + 2)]
+    batches = [
+        collate(frames, np.sort(rng.choice(len(frames), batch_size, replace=False))).to(
+            device=device, dtype=torch.float32
+        )
+        for _ in range(steps + 2)
+    ]
+
     def step(batch):
         out = model(batch, compute_force=True, compute_stress=True, training=True)
         combine(loss_sums(out, batch, cfg), loss_counts(batch.natoms.tolist()), cfg).backward()
+
     for b in batches[:2]:
         step(b)
     activities = [ProfilerActivity.CPU] + ([ProfilerActivity.CUDA] if device.type == "cuda" else [])

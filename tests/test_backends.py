@@ -1,4 +1,5 @@
 """The cuEquivariance backend gives the same model as the e3nn backend."""
+
 import numpy as np
 import pytest
 import torch

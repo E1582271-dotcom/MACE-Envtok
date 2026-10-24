@@ -40,7 +40,7 @@ KBAR_TO_EV_PER_A3 = 0.1 / 160.21766208
 # Permutation from the release's 6-vector to ASE's Voigt order (xx, yy, zz, yz, xz, xy).
 STRESS_ORDERS: dict[str, tuple[int, ...]] = {
     "voigt": (0, 1, 2, 3, 4, 5),  # pymatgen's Voigt order: already xx yy zz yz xz xy
-    "vasp": (0, 1, 2, 4, 5, 3),   # the order of VASP's "in kB" line: XX YY ZZ XY YZ ZX
+    "vasp": (0, 1, 2, 4, 5, 3),  # the order of VASP's "in kB" line: XX YY ZZ XY YZ ZX
 }
 
 # The paper's boundary check on the test set.
@@ -61,8 +61,13 @@ def _symbol_to_z() -> dict[str, int]:
 class _Filter:
     """Which structures to keep, and how to read their stress."""
 
-    def __init__(self, allowed_z: frozenset[int], keep_sids: frozenset[str] | None,
-                 stress_sign: float, stress_order: str):
+    def __init__(
+        self,
+        allowed_z: frozenset[int],
+        keep_sids: frozenset[str] | None,
+        stress_sign: float,
+        stress_order: str,
+    ):
         self.allowed_z = allowed_z
         self.keep_sids = keep_sids
         self.stress_scale = stress_sign * KBAR_TO_EV_PER_A3
@@ -95,11 +100,16 @@ def _parse_record(line: str, flt: _Filter) -> dict | None:
     if not flt.allowed_z.issuperset(z.tolist()):
         return None
     stress = flt.stress_scale * np.asarray(rec["stress"], dtype=np.float64)[flt.perm]
-    return {"sid": sid, "numbers": z, "positions": pos,
-            "forces": np.asarray(rec["forces"], dtype=np.float64),
-            "cell": np.asarray(rec["structure"]["lattice"]["matrix"], dtype=np.float64),
-            "pbc": np.asarray(rec["structure"]["lattice"].get("pbc", (True, True, True)), dtype=bool),
-            "energy": float(rec["energy"]), "stress": stress}
+    return {
+        "sid": sid,
+        "numbers": z,
+        "positions": pos,
+        "forces": np.asarray(rec["forces"], dtype=np.float64),
+        "cell": np.asarray(rec["structure"]["lattice"]["matrix"], dtype=np.float64),
+        "pbc": np.asarray(rec["structure"]["lattice"].get("pbc", (True, True, True)), dtype=bool),
+        "energy": float(rec["energy"]),
+        "stress": stress,
+    }
 
 
 def _parse_chunk(lines: list[str]) -> list[dict]:
@@ -126,13 +136,20 @@ def _chunks(path: str | Path, size: int):
             yield batch
 
 
-def read_matpes(path: str | Path, keep_sids: list[str] | None = None,
-                allowed_z: frozenset[int] = frozenset(Z_TABLE), stress_sign: float = -1.0,
-                stress_order: str = "voigt", workers: int = 1, chunk: int = 2000) -> Frames:
+def read_matpes(
+    path: str | Path,
+    keep_sids: list[str] | None = None,
+    allowed_z: frozenset[int] = frozenset(Z_TABLE),
+    stress_sign: float = -1.0,
+    stress_order: str = "voigt",
+    workers: int = 1,
+    chunk: int = 2000,
+) -> Frames:
     """Parse the MatPES JSONL into Frames, in file order, without neighbour lists."""
     t0 = time.time()
-    flt = _Filter(allowed_z, frozenset(keep_sids) if keep_sids is not None else None,
-                  stress_sign, stress_order)
+    flt = _Filter(
+        allowed_z, frozenset(keep_sids) if keep_sids is not None else None, stress_sign, stress_order
+    )
     kept: list[dict] = []
     if workers > 1:
         ctx = mp.get_context("fork" if sys.platform.startswith("linux") else "spawn")
@@ -140,8 +157,10 @@ def read_matpes(path: str | Path, keep_sids: list[str] | None = None,
             for i, part in enumerate(pool.imap(_parse_chunk, _chunks(path, chunk)), 1):
                 kept.extend(part)
                 if i % 20 == 0:
-                    print(f"  {i * chunk:,} records read, {len(kept):,} kept "
-                          f"({time.time() - t0:.0f} s)", flush=True)
+                    print(
+                        f"  {i * chunk:,} records read, {len(kept):,} kept ({time.time() - t0:.0f} s)",
+                        flush=True,
+                    )
     else:
         _init_worker(flt)
         for part in _chunks(path, chunk):
@@ -153,8 +172,7 @@ def read_matpes(path: str | Path, keep_sids: list[str] | None = None,
         found = {r["sid"]: r for r in kept}
         missing = [s for s in keep_sids if s not in found]
         if missing:
-            raise ValueError(f"{len(missing)} requested sids are not in {path}, "
-                             f"e.g. {missing[:3]}")
+            raise ValueError(f"{len(missing)} requested sids are not in {path}, e.g. {missing[:3]}")
         kept = [found[s] for s in keep_sids]
 
     frames = Frames(
@@ -171,30 +189,40 @@ def read_matpes(path: str | Path, keep_sids: list[str] | None = None,
         attrs={"source": SOURCE, "stress_sign": float(stress_sign), "stress_order": stress_order},
     )
     frames.validate()
-    print(f"kept {len(frames):,} structures, {int(frames.atom_ptr[-1]):,} atoms "
-          f"({time.time() - t0:.0f} s)", flush=True)
+    print(
+        f"kept {len(frames):,} structures, {int(frames.atom_ptr[-1]):,} atoms ({time.time() - t0:.0f} s)",
+        flush=True,
+    )
     return frames
 
 
 def add_arguments(p: argparse.ArgumentParser) -> None:
     p.add_argument("--src", required=True, help="MatPES-PBE-2025.2.jsonl (optionally .gz)")
     p.add_argument("--dst", required=True, help="output Frames HDF5 (no neighbour lists yet)")
-    p.add_argument("--sids", default=None,
-                   help="text file of sids to keep, one per line (overrides the element filter)")
+    p.add_argument(
+        "--sids", default=None, help="text file of sids to keep, one per line (overrides the element filter)"
+    )
     p.add_argument("--stress-sign", type=float, default=-1.0)
     p.add_argument("--stress-order", default="voigt", choices=sorted(STRESS_ORDERS))
     p.add_argument("--workers", type=int, default=1)
     p.add_argument("--chunk", type=int, default=2000)
-    p.add_argument("--expect", action="store_true",
-                   help="assert the paper's 323,096 structures / 3,011,678 atoms")
+    p.add_argument(
+        "--expect", action="store_true", help="assert the paper's 323,096 structures / 3,011,678 atoms"
+    )
 
 
 def run(args: argparse.Namespace) -> None:
     sids = None
     if args.sids:
         sids = [s.strip() for s in Path(args.sids).read_text().split() if s.strip()]
-    frames = read_matpes(args.src, sids, workers=args.workers, chunk=args.chunk,
-                         stress_sign=args.stress_sign, stress_order=args.stress_order)
+    frames = read_matpes(
+        args.src,
+        sids,
+        workers=args.workers,
+        chunk=args.chunk,
+        stress_sign=args.stress_sign,
+        stress_order=args.stress_order,
+    )
     if args.expect:
         assert len(frames) == EXPECTED["structures"], f"{len(frames)} structures"
         assert int(frames.atom_ptr[-1]) == EXPECTED["atoms"], f"{int(frames.atom_ptr[-1])} atoms"

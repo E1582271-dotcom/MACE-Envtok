@@ -24,8 +24,14 @@ _VOIGT_COLS = (0, 1, 2, 2, 2, 1)
 class EnvTokCalculator(Calculator):
     implemented_properties = ["energy", "free_energy", "forces", "stress", "energies"]
 
-    def __init__(self, model, device: str | torch.device = "cpu",
-                 dtype: torch.dtype | str = torch.float64, backend: str | None = None, **kwargs):
+    def __init__(
+        self,
+        model,
+        device: str | torch.device = "cpu",
+        dtype: torch.dtype | str = torch.float64,
+        backend: str | None = None,
+        **kwargs,
+    ):
         """``model``: a MACE instance, or a path accepted by ``eval.run_eval.load_model``
         (our checkpoints or a released mace-torch .model)."""
         super().__init__(**kwargs)
@@ -47,10 +53,13 @@ class EnvTokCalculator(Calculator):
         t = lambda a, dt=self.dtype: torch.as_tensor(a, dtype=dt, device=self.device)  # noqa: E731
         n = len(atoms)
         return SimpleNamespace(
-            positions=t(pos), numbers=t(atoms.get_atomic_numbers(), torch.long),
+            positions=t(pos),
+            numbers=t(atoms.get_atomic_numbers(), torch.long),
             batch=torch.zeros(n, dtype=torch.long, device=self.device),
-            edge_index=t(edge_index, torch.long), unit_shifts=t(shifts),
-            cell=t(cell).unsqueeze(0), num_graphs=1,
+            edge_index=t(edge_index, torch.long),
+            unit_shifts=t(shifts),
+            cell=t(cell).unsqueeze(0),
+            num_graphs=1,
         )
 
     def calculate(self, atoms=None, properties=("energy",), system_changes=all_changes):
@@ -58,11 +67,13 @@ class EnvTokCalculator(Calculator):
         # Stress costs one extra gradient, so it is always returned for a periodic
         # cell: ASE optimisers with a cell filter ask for it right after the forces.
         want_stress = bool(self.atoms.pbc.all()) and self.atoms.cell.rank == 3
-        out = self.model(self._batch(self.atoms), compute_force=True,
-                         compute_stress=want_stress, training=False)
+        out = self.model(
+            self._batch(self.atoms), compute_force=True, compute_stress=want_stress, training=False
+        )
         energy = float(out["energy"].detach().item())
         self.results = {
-            "energy": energy, "free_energy": energy,
+            "energy": energy,
+            "free_energy": energy,
             "forces": out["forces"].detach().cpu().numpy().astype(np.float64),
             "energies": out["node_energy"].detach().cpu().numpy().astype(np.float64),
         }

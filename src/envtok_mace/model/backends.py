@@ -26,8 +26,10 @@ def _cue():
         import cuequivariance as cue
         import cuequivariance_torch as cuet
     except ImportError as exc:  # pragma: no cover
-        raise ImportError("backend 'cueq' needs cuequivariance-torch "
-                          "(pip install cuequivariance-torch cuequivariance-ops-torch-cu12)") from exc
+        raise ImportError(
+            "backend 'cueq' needs cuequivariance-torch "
+            "(pip install cuequivariance-torch cuequivariance-ops-torch-cu12)"
+        ) from exc
     return cue, cuet
 
 
@@ -89,29 +91,52 @@ def linear(irreps_in, irreps_out, backend: str, use_fallback: bool | None = None
     return cuet.Linear(_irreps(irreps_in), _irreps(irreps_out), layout=cue.mul_ir, use_fallback=True)
 
 
-def fully_connected_tp(irreps1, irreps2, irreps_out, backend: str, use_fallback: bool | None = None) -> nn.Module:
+def fully_connected_tp(
+    irreps1, irreps2, irreps_out, backend: str, use_fallback: bool | None = None
+) -> nn.Module:
     if backend == "e3nn":
         return o3.FullyConnectedTensorProduct(irreps1, irreps2, irreps_out)
     cue, cuet = _cue()
-    return cuet.FullyConnectedTensorProduct(_irreps(irreps1), _irreps(irreps2), _irreps(irreps_out),
-                                            layout=cue.mul_ir, use_fallback=True)
+    return cuet.FullyConnectedTensorProduct(
+        _irreps(irreps1), _irreps(irreps2), _irreps(irreps_out), layout=cue.mul_ir, use_fallback=True
+    )
 
 
 class MessageTP(nn.Module):
     """sum over edges j->i of TP(h_j, Y_ij; w_ij), with per-edge weights w."""
 
-    def __init__(self, irreps_node, irreps_sh, irreps_mid, instructions, target_irreps, backend: str,
-                 use_fallback: bool | None = None):
+    def __init__(
+        self,
+        irreps_node,
+        irreps_sh,
+        irreps_mid,
+        instructions,
+        target_irreps,
+        backend: str,
+        use_fallback: bool | None = None,
+    ):
         super().__init__()
         self.backend = backend
         if backend == "e3nn":
-            self.tp = o3.TensorProduct(irreps_node, irreps_sh, irreps_mid, instructions=instructions,
-                                       shared_weights=False, internal_weights=False)
+            self.tp = o3.TensorProduct(
+                irreps_node,
+                irreps_sh,
+                irreps_mid,
+                instructions=instructions,
+                shared_weights=False,
+                internal_weights=False,
+            )
         else:
             cue, cuet = _cue()
             self.tp = cuet.ChannelWiseTensorProduct(
-                _irreps(irreps_node), _irreps(irreps_sh), filter_irreps_out=_irreps(target_irreps),
-                layout=cue.mul_ir, shared_weights=False, internal_weights=False, use_fallback=use_fallback)
+                _irreps(irreps_node),
+                _irreps(irreps_sh),
+                filter_irreps_out=_irreps(target_irreps),
+                layout=cue.mul_ir,
+                shared_weights=False,
+                internal_weights=False,
+                use_fallback=use_fallback,
+            )
             if str(self.tp.irreps_out) != str(_irreps(irreps_mid)):
                 raise RuntimeError(f"cueq output irreps {self.tp.irreps_out} != {irreps_mid}")
         self.weight_numel = self.tp.weight_numel
@@ -121,37 +146,49 @@ class MessageTP(nn.Module):
             messages = self.tp(h[sender], edge_sh, weights)
             out = torch.zeros(num_nodes, messages.shape[1], dtype=messages.dtype, device=messages.device)
             return out.index_add_(0, receiver, messages)
-        return self.tp(h, edge_sh, weights, indices_1=sender, indices_out=receiver,
-                       size_out=num_nodes)
+        return self.tp(h, edge_sh, weights, indices_1=sender, indices_out=receiver, size_out=num_nodes)
 
 
 class CueqSymmetricContraction(nn.Module):
     """cuEquivariance symmetric contraction in the original MACE coupling basis."""
 
-    def __init__(self, irreps_in, irreps_out, correlation: int, num_elements: int,
-                 use_fallback: bool | None = None):
+    def __init__(
+        self, irreps_in, irreps_out, correlation: int, num_elements: int, use_fallback: bool | None = None
+    ):
         super().__init__()
         cue, cuet = _cue()
         self.correlation = correlation
         self.out_irreps = [ir for _, ir in o3.Irreps(irreps_out)]
         self.sc = cuet.SymmetricContraction(
-            _irreps(irreps_in), _irreps(irreps_out), contraction_degree=correlation,
-            num_elements=num_elements, layout_in=cue.ir_mul, layout_out=cue.mul_ir, original_mace=True,
+            _irreps(irreps_in),
+            _irreps(irreps_out),
+            contraction_degree=correlation,
+            num_elements=num_elements,
+            layout_in=cue.ir_mul,
+            layout_out=cue.mul_ir,
+            original_mace=True,
             # the kernel computes in math_dtype; it must match the model precision
-            dtype=torch.get_default_dtype(), math_dtype=torch.get_default_dtype(), use_fallback=use_fallback)
+            dtype=torch.get_default_dtype(),
+            math_dtype=torch.get_default_dtype(),
+            use_fallback=use_fallback,
+        )
         from .cg import u_matrix
 
         coupling = o3.Irreps([ir for _, ir in o3.Irreps(irreps_in)])
-        self.path_counts = {(k, nu): u_matrix(coupling, ir, nu).shape[-1]
-                            for k, ir in enumerate(self.out_irreps) for nu in range(1, correlation + 1)}
+        self.path_counts = {
+            (k, nu): u_matrix(coupling, ir, nu).shape[-1]
+            for k, ir in enumerate(self.out_irreps)
+            for nu in range(1, correlation + 1)
+        }
 
     def forward(self, x: torch.Tensor, node_attrs: torch.Tensor) -> torch.Tensor:
         # x: [N, C, D] -> "ir_mul" layout expected by the kernel
         return self.sc(x.transpose(1, 2).flatten(1), node_attrs.argmax(-1).int())
 
 
-def symmetric_contraction(irreps_in, irreps_out, correlation: int, num_elements: int, backend: str,
-                          use_fallback: bool | None = None) -> nn.Module:
+def symmetric_contraction(
+    irreps_in, irreps_out, correlation: int, num_elements: int, backend: str, use_fallback: bool | None = None
+) -> nn.Module:
     if backend == "e3nn":
         from .blocks import SymmetricContraction
 
@@ -172,7 +209,9 @@ def convert_state_dict(state: dict, src_model, dst_model) -> dict:
         # cuEquivariance stores one tensor: per output irrep, orders corr..1 along dim 1
         order = [(k, nu) for k in range(n_out) for nu in range(corr, 0, -1)]
         if isinstance(src_sc, CueqSymmetricContraction):
-            w = state[prefix + "sc.weight"].reshape(-1, sum(src_sc.path_counts.values()), state[prefix + "sc.weight"].shape[-1])
+            w = state[prefix + "sc.weight"].reshape(
+                -1, sum(src_sc.path_counts.values()), state[prefix + "sc.weight"].shape[-1]
+            )
             parts = dict(zip(order, torch.split(w, [src_sc.path_counts[kn] for kn in order], dim=1)))
         else:
             parts = {(k, nu): state[prefix + f"weights.{k * corr + nu - 1}"] for k, nu in order}

@@ -31,8 +31,10 @@ def config_from_mace(ref) -> MACEConfig:
         agnesi=hasattr(radial, "distance_transform"),
         pair_repulsion=hasattr(ref, "pair_repulsion"),
         z_table=tuple(int(z) for z in ref.atomic_numbers),
-        e0s={int(z): float(e) for z, e in zip(ref.atomic_numbers,
-                                               torch.atleast_2d(ref.atomic_energies_fn.atomic_energies)[0])},
+        e0s={
+            int(z): float(e)
+            for z, e in zip(ref.atomic_numbers, torch.atleast_2d(ref.atomic_energies_fn.atomic_energies)[0])
+        },
         scale=float(torch.atleast_1d(ref.scale_shift.scale)[0]) if hasattr(ref, "scale_shift") else 1.0,
         shift=float(torch.atleast_1d(ref.scale_shift.shift)[0]) if hasattr(ref, "scale_shift") else 0.0,
     )
@@ -76,8 +78,12 @@ def _buffer_map(model: MACE, ref) -> dict[str, str]:
         "radial.r_max": "radial_embedding.cutoff_fn.r_max",
     }
     if cfg.agnesi:
-        for ours, theirs in (("agnesi_a", "a"), ("agnesi_q", "q"), ("agnesi_p", "p"),
-                             ("covalent_radii", "covalent_radii")):
+        for ours, theirs in (
+            ("agnesi_a", "a"),
+            ("agnesi_q", "q"),
+            ("agnesi_p", "p"),
+            ("covalent_radii", "covalent_radii"),
+        ):
             m[f"radial.{ours}"] = f"radial_embedding.distance_transform.{theirs}"
     if cfg.pair_repulsion:
         for name in ("c", "covalent_radii", "a_exp", "a_prefactor"):
@@ -88,8 +94,9 @@ def _buffer_map(model: MACE, ref) -> dict[str, str]:
         sc = model.products[t].symmetric_contraction
         for k in range(len(sc.out_irreps)):
             for nu in range(1, cfg.correlation + 1):
-                m[f"products.{t}.symmetric_contraction.U_{k}_{nu}"] = \
+                m[f"products.{t}.symmetric_contraction.U_{k}_{nu}"] = (
                     f"products.{t}.symmetric_contractions.contractions.{k}.U_matrix_{nu}"
+                )
     return m
 
 
@@ -135,8 +142,9 @@ def build_reference_mace(cfg: MACEConfig, avg_num_neighbors: float = 40.0):
     from e3nn import o3
     from mace import modules
 
-    hidden = " + ".join(f"{cfg.num_channels}x{ell}{'e' if ell % 2 == 0 else 'o'}"
-                        for ell in range(cfg.max_L + 1))
+    hidden = " + ".join(
+        f"{cfg.num_channels}x{ell}{'e' if ell % 2 == 0 else 'o'}" for ell in range(cfg.max_L + 1)
+    )
     return modules.ScaleShiftMACE(
         r_max=cfg.r_max,
         num_bessel=cfg.num_bessel,

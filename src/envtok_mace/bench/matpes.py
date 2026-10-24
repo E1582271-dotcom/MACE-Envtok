@@ -55,8 +55,9 @@ _VOIGT_COLS = (0, 1, 2, 2, 2, 1)
 
 
 # --------------------------------------------------------------------- scoring
-def score(model, frames: Frames, batches: list[np.ndarray], device: torch.device,
-          dtype: torch.dtype) -> tuple[dict, dict]:
+def score(
+    model, frames: Frames, batches: list[np.ndarray], device: torch.device, dtype: torch.dtype
+) -> tuple[dict, dict]:
     """Per-structure and per-atom errors, in the frames' own order."""
     n, a = len(frames), int(frames.atom_ptr[-1])
     ps = {k: np.full(n, np.nan) for k, _, _ in QUANTITIES}
@@ -80,8 +81,7 @@ def score(model, frames: Frames, batches: list[np.ndarray], device: torch.device
         ps["abs_d_energy_per_atom"][rows] = de.cpu().numpy()
         ps["s_mae_voigt6"][rows] = s6.abs().mean(dim=1).cpu().numpy()
         ps["s_err_norm"][rows] = ds.flatten(1).norm(dim=1).cpu().numpy()
-        d_force[_ranges(frames.atom_ptr[rows], frames.atom_ptr[rows + 1])] = \
-            df.float().cpu().numpy()
+        d_force[_ranges(frames.atom_ptr[rows], frames.atom_ptr[rows + 1])] = df.float().cpu().numpy()
 
     # The largest per-atom error of a structure, from the per-atom layer, so the
     # two files cannot disagree. Structures that were not scored stay NaN.
@@ -94,14 +94,17 @@ def score(model, frames: Frames, batches: list[np.ndarray], device: torch.device
     symbols = np.array(chemical_symbols)
     elements, n_elements = [], np.empty(n, dtype=np.int64)
     for i in range(n):
-        u = np.unique(frames.numbers[frames.atom_ptr[i]:frames.atom_ptr[i + 1]])
+        u = np.unique(frames.numbers[frames.atom_ptr[i] : frames.atom_ptr[i + 1]])
         elements.append("".join(sorted(symbols[u])))
         n_elements[i] = len(u)
 
     per_structure = {
-        "index": np.arange(n, dtype=np.int64), "sid": frames.sid.astype(str),
-        "natoms": frames.natoms.astype(np.int64), "n_elements": n_elements,
-        "elements": np.array(elements), **ps,
+        "index": np.arange(n, dtype=np.int64),
+        "sid": frames.sid.astype(str),
+        "natoms": frames.natoms.astype(np.int64),
+        "n_elements": n_elements,
+        "elements": np.array(elements),
+        **ps,
         "e_finite": np.isfinite(ps["abs_d_energy_per_atom"]),
         "f_finite": np.isfinite(ps["f_mae_comp"]),
         "s_finite": np.isfinite(ps["s_mae_voigt6"]),
@@ -131,8 +134,11 @@ def wquantile(v: np.ndarray, w: np.ndarray, q: float) -> float:
 
 def wmean(v: np.ndarray, w: np.ndarray) -> float:
     ok = w > 0
-    return float(np.average(np.asarray(v, float)[ok], weights=np.asarray(w, float)[ok])) \
-        if ok.any() else float("nan")
+    return (
+        float(np.average(np.asarray(v, float)[ok], weights=np.asarray(w, float)[ok]))
+        if ok.any()
+        else float("nan")
+    )
 
 
 def wtrimmed_mean(v: np.ndarray, w: np.ndarray, frac: float = TRIM_FRACTION) -> float:
@@ -157,12 +163,14 @@ def wgeomean(v: np.ndarray, w: np.ndarray, floor: float = 1e-9) -> float:
     ok = (w > 0) & np.isfinite(v)
     if not ok.any():
         return float("nan")
-    return float(np.exp(np.average(np.log(np.maximum(np.asarray(v, float)[ok], floor)),
-                                   weights=np.asarray(w, float)[ok])))
+    return float(
+        np.exp(
+            np.average(np.log(np.maximum(np.asarray(v, float)[ok], floor)), weights=np.asarray(w, float)[ok])
+        )
+    )
 
 
-def pooled_cap(values: list[np.ndarray], weights: list[np.ndarray],
-               q: float = WINSOR_QUANTILE) -> float:
+def pooled_cap(values: list[np.ndarray], weights: list[np.ndarray], q: float = WINSOR_QUANTILE) -> float:
     """The common clipping cap: quantile ``q`` of every model's values pooled."""
     v = np.concatenate([np.asarray(x, float) for x in values])
     w = np.concatenate([np.asarray(x, float) for x in weights])
@@ -209,12 +217,14 @@ def paper_domains(run: dict) -> np.ndarray:
     label. This reproduces their 242,319 / 80,766 / 11 split exactly.
     """
     stored = run["domain"].astype(str)
-    return np.where(stored == "overcompressed", "overcompressed",
-                    np.where(run["dim"] < 3, "non_bulk", "bulk"))
+    return np.where(
+        stored == "overcompressed", "overcompressed", np.where(run["dim"] < 3, "non_bulk", "bulk")
+    )
 
 
-def align(runs: dict[str, dict], domain_from: str | None,
-          rule: str = "paper") -> tuple[dict[str, dict], np.ndarray]:
+def align(
+    runs: dict[str, dict], domain_from: str | None, rule: str = "paper"
+) -> tuple[dict[str, dict], np.ndarray]:
     """Put every run on the sid order of the first one; return the domain labels."""
     labels = list(runs)
     order = runs[labels[0]]["sid"].astype(str)
@@ -226,12 +236,14 @@ def align(runs: dict[str, dict], domain_from: str | None,
         if missing:
             raise ValueError(f"{label} is missing {len(missing)} sids, e.g. {missing[:3]}")
         take = np.array([pos[s] for s in order])
-        out[label] = {k: v[take] if getattr(v, "shape", ()) == sid.shape else v
-                      for k, v in runs[label].items()}
+        out[label] = {
+            k: v[take] if getattr(v, "shape", ()) == sid.shape else v for k, v in runs[label].items()
+        }
     src = domain_from or labels[0]
     if "domain" not in out[src]:
-        raise ValueError(f"run {src} has no domain column; point --domain-from at the "
-                         f"authors' per_structure.npz directory")
+        raise ValueError(
+            f"run {src} has no domain column; point --domain-from at the authors' per_structure.npz directory"
+        )
     if rule == "paper":
         return out, paper_domains(out[src])
     return out, out[src]["domain"].astype(str)
@@ -250,9 +262,13 @@ def tables(runs: dict[str, dict], domain: np.ndarray) -> dict:
             continue
         out["metrics"][key] = {"unit": unit, "domains": {}}
         for dk, m in masks.items():
-            vw = [(worst_fill(runs[L][key][m]),
-                   runs[L][wcol][m].astype(float) if wcol else np.ones(int(m.sum())))
-                  for L in labels]
+            vw = [
+                (
+                    worst_fill(runs[L][key][m]),
+                    runs[L][wcol][m].astype(float) if wcol else np.ones(int(m.sum())),
+                )
+                for L in labels
+            ]
             cap = pooled_cap([v for v, _ in vw], [w for _, w in vw])
             dom = {"n": int(m.sum()), "cap": cap, "estimators": {}}
             for name, fn in ESTIMATORS:
@@ -272,8 +288,7 @@ def write_tables(result: dict, out_dir: str | Path, scale: float = 1e3) -> None:
             with path.open("w", newline="") as fh:
                 w = csv.writer(fh)
                 w.writerow([f"# {key} over domain {dk}, in {meta['unit']}"])
-                w.writerow([f"# {dom['n']} structures, winsor cap "
-                            f"{scale * dom['cap']:.6g} {meta['unit']}"])
+                w.writerow([f"# {dom['n']} structures, winsor cap {scale * dom['cap']:.6g} {meta['unit']}"])
                 w.writerow(["estimator"] + labels)
                 for name, vals in dom["estimators"].items():
                     w.writerow([name] + [f"{scale * vals[L]:.6g}" for L in labels])
@@ -300,12 +315,15 @@ def compare_per_atom(ours_dir: str | Path, theirs_dir: str | Path) -> dict:
     d_ref = np.abs(ours_a["ref_norm"][o_atoms] - theirs_a["ref_norm"][t_atoms])
     d_err = np.abs(ours_a["err_norm"][o_atoms] - theirs_a["err_norm"][t_atoms])
     rel = d_err / np.maximum(theirs_a["err_norm"][t_atoms], 1e-6)
-    return {"n_structures": int(len(take)), "n_atoms": int(len(o_atoms)),
-            "atom_order_matches": z_match,
-            "max_abs_d_ref_norm_eV_per_A": float(d_ref.max()),
-            "max_abs_d_err_norm_eV_per_A": float(d_err.max()),
-            "median_rel_d_err_norm": float(np.median(rel)),
-            "q999_rel_d_err_norm": float(np.quantile(rel, 0.999))}
+    return {
+        "n_structures": int(len(take)),
+        "n_atoms": int(len(o_atoms)),
+        "atom_order_matches": z_match,
+        "max_abs_d_ref_norm_eV_per_A": float(d_ref.max()),
+        "max_abs_d_err_norm_eV_per_A": float(d_err.max()),
+        "median_rel_d_err_norm": float(np.median(rel)),
+        "q999_rel_d_err_norm": float(np.quantile(rel, 0.999)),
+    }
 
 
 def _restress(stress: np.ndarray, frm: tuple[float, str], to: tuple[float, str]) -> np.ndarray:
@@ -337,8 +355,12 @@ def calibrate_stress(model, frames: Frames, batches: list[np.ndarray], device, d
             name = f"sign{'+' if sign > 0 else '-'}_{order}"
             out[name] = 1e3 * float(np.abs(pred - ref).mean())
     best = min(out, key=out.get)
-    return {"stress_mae_meV_per_A3": out, "best": best, "stored": f"{stored[0]:+g}_{stored[1]}",
-            "n_structures": int(len(idx))}
+    return {
+        "stress_mae_meV_per_A3": out,
+        "best": best,
+        "stored": f"{stored[0]:+g}_{stored[1]}",
+        "n_structures": int(len(idx)),
+    }
 
 
 # -------------------------------------------------------------------------- CLI
@@ -346,19 +368,40 @@ def add_arguments(p: argparse.ArgumentParser) -> None:
     p.add_argument("--frames", default=None, help="MatPES Frames HDF5 with neighbour lists")
     p.add_argument("--model", default=None, help="checkpoint (.pt) or mace-torch .model")
     p.add_argument("--out", default=None, help="output directory for this model's npz files")
-    p.add_argument("--tables", nargs="+", default=None,
-                   help="directories of per_structure.npz to aggregate instead of scoring")
+    p.add_argument(
+        "--tables",
+        nargs="+",
+        default=None,
+        help="directories of per_structure.npz to aggregate instead of scoring",
+    )
     p.add_argument("--labels", nargs="+", default=None)
-    p.add_argument("--domain-from", default=None,
-                   help="label whose per_structure.npz supplies the domain column")
-    p.add_argument("--domain-rule", default="paper", choices=["paper", "stored"],
-                   help="paper: relabel by dimensionality as the published tables do")
-    p.add_argument("--dump-sids", default=None, metavar="PER_STRUCTURE_NPZ",
-                   help="write the sid column of a per-structure file, one per line, to --out")
-    p.add_argument("--compare", nargs=2, default=None, metavar=("OURS", "THEIRS"),
-                   help="atom-by-atom agreement between two output directories")
-    p.add_argument("--calibrate-stress", action="store_true",
-                   help="measure the release's stress sign and component order")
+    p.add_argument(
+        "--domain-from", default=None, help="label whose per_structure.npz supplies the domain column"
+    )
+    p.add_argument(
+        "--domain-rule",
+        default="paper",
+        choices=["paper", "stored"],
+        help="paper: relabel by dimensionality as the published tables do",
+    )
+    p.add_argument(
+        "--dump-sids",
+        default=None,
+        metavar="PER_STRUCTURE_NPZ",
+        help="write the sid column of a per-structure file, one per line, to --out",
+    )
+    p.add_argument(
+        "--compare",
+        nargs=2,
+        default=None,
+        metavar=("OURS", "THEIRS"),
+        help="atom-by-atom agreement between two output directories",
+    )
+    p.add_argument(
+        "--calibrate-stress",
+        action="store_true",
+        help="measure the release's stress sign and component order",
+    )
     p.add_argument("--n", type=int, default=None, help="score a fixed random subset of this size")
     p.add_argument("--batch-size", type=int, default=128)
     p.add_argument("--max-edges", type=int, default=60000)
@@ -398,22 +441,32 @@ def run(args: argparse.Namespace) -> None:
 
     per_structure, per_atom = score(model, frames, batches, device, dtype)
     if args.n is not None:  # keep only what was scored
-        per_structure = {k: (v[idx] if getattr(v, "shape", ()) == (len(frames),) else v)
-                         for k, v in per_structure.items()}
+        per_structure = {
+            k: (v[idx] if getattr(v, "shape", ()) == (len(frames),) else v) for k, v in per_structure.items()
+        }
         atoms = _ranges(frames.atom_ptr[idx], frames.atom_ptr[idx + 1])
-        per_atom = {**{k: per_atom[k][atoms] for k in ("d_force", "err_norm", "ref_norm", "Z")},
-                    "frame": np.repeat(np.arange(len(idx), dtype=np.int32), frames.natoms[idx]),
-                    "struct_offset": np.concatenate([[0], np.cumsum(frames.natoms[idx])])}
+        per_atom = {
+            **{k: per_atom[k][atoms] for k in ("d_force", "err_norm", "ref_norm", "Z")},
+            "frame": np.repeat(np.arange(len(idx), dtype=np.int32), frames.natoms[idx]),
+            "struct_offset": np.concatenate([[0], np.cumsum(frames.natoms[idx])]),
+        }
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
     np.savez_compressed(out / "per_structure.npz", **per_structure)
     np.savez_compressed(out / "per_atom_forces.npz", **per_atom)
     w = per_structure["natoms"].astype(float)
-    print(json.dumps({"model": args.model, "n_structures": len(per_structure["sid"]),
-                      "pooled_force_mae_meV_per_A":
-                          1e3 * wmean(worst_fill(per_structure["f_mae_comp"]), w),
-                      "pooled_energy_mae_meV_per_atom":
-                          1e3 * wmean(worst_fill(per_structure["abs_d_energy_per_atom"]),
-                                      np.ones_like(w)),
-                      "non_finite_structures": int((~per_structure["f_finite"]).sum()),
-                      "out": str(out)}, indent=2), flush=True)
+    print(
+        json.dumps(
+            {
+                "model": args.model,
+                "n_structures": len(per_structure["sid"]),
+                "pooled_force_mae_meV_per_A": 1e3 * wmean(worst_fill(per_structure["f_mae_comp"]), w),
+                "pooled_energy_mae_meV_per_atom": 1e3
+                * wmean(worst_fill(per_structure["abs_d_energy_per_atom"]), np.ones_like(w)),
+                "non_finite_structures": int((~per_structure["f_finite"]).sum()),
+                "out": str(out),
+            },
+            indent=2,
+        ),
+        flush=True,
+    )

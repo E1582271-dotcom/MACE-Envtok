@@ -22,10 +22,18 @@ def _parse_walltime(text: str | None) -> float | None:
 
 def add_arguments(p: argparse.ArgumentParser) -> None:
     p.add_argument("--config", required=True, help="YAML file with TrainConfig fields")
-    p.add_argument("--set", nargs="*", default=[], metavar="KEY=VALUE",
-                   help="override config fields, values parsed as JSON when possible")
-    p.add_argument("--walltime", default=os.environ.get("ENVTOK_WALLTIME"),
-                   help="job walltime HH:MM:SS; the run checkpoints and exits shortly before it")
+    p.add_argument(
+        "--set",
+        nargs="*",
+        default=[],
+        metavar="KEY=VALUE",
+        help="override config fields, values parsed as JSON when possible",
+    )
+    p.add_argument(
+        "--walltime",
+        default=os.environ.get("ENVTOK_WALLTIME"),
+        help="job walltime HH:MM:SS; the run checkpoints and exits shortly before it",
+    )
 
 
 def run(args: argparse.Namespace) -> None:

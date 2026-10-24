@@ -24,7 +24,7 @@ def coupling_basis(irreps: o3.Irreps, n: int, dtype: torch.dtype | None = None):
         paths, start = [], 0
         for mul, ir in irreps:
             for _ in range(mul):
-                paths.append((ir, eye[start:start + ir.dim]))
+                paths.append((ir, eye[start : start + ir.dim]))
                 start += ir.dim
         return paths
 

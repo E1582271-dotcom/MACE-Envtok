@@ -12,16 +12,33 @@ from ..data.frames import Frames
 from ..train.dist import all_reduce_sum
 from ..train.loss import TERMS, LossConfig, combine, loss_sums
 
-_FIELDS = ("n_graphs", "n_force", "n_stress", "e_abs", "e_sq", "f_abs", "f_sq", "s_abs",
-           "loss_energy", "loss_forces", "loss_stress")
+_FIELDS = (
+    "n_graphs",
+    "n_force",
+    "n_stress",
+    "e_abs",
+    "e_sq",
+    "f_abs",
+    "f_sq",
+    "s_abs",
+    "loss_energy",
+    "loss_forces",
+    "loss_stress",
+)
 
 
 def unwrap(model):
     return model.module if hasattr(model, "module") else model
 
 
-def evaluate(model, frames: Frames, batches: list[np.ndarray], device: torch.device,
-             dtype: torch.dtype, loss_cfg: LossConfig | None = None) -> dict[str, float]:
+def evaluate(
+    model,
+    frames: Frames,
+    batches: list[np.ndarray],
+    device: torch.device,
+    dtype: torch.dtype,
+    loss_cfg: LossConfig | None = None,
+) -> dict[str, float]:
     """``batches`` are this rank's index arrays; results are global (all-reduced)."""
     model = unwrap(model)
     loss_cfg = loss_cfg or LossConfig()
@@ -32,15 +49,24 @@ def evaluate(model, frames: Frames, batches: list[np.ndarray], device: torch.dev
         e_err = ((out["energy"].detach() - batch.energy) / batch.natoms).double()
         f_err = (out["forces"].detach() - batch.forces).double()
         s_err = (out["stress"].detach() - batch.stress).double()
-        sums = loss_sums({k: v.detach() for k, v in out.items() if k in ("energy", "forces", "stress")},
-                         batch, loss_cfg)
-        acc += torch.stack([
-            torch.tensor(float(len(idx)), device=device, dtype=torch.float64),
-            torch.tensor(float(f_err.numel()), device=device, dtype=torch.float64),
-            torch.tensor(float(s_err.numel()), device=device, dtype=torch.float64),
-            e_err.abs().sum(), (e_err**2).sum(), f_err.abs().sum(), (f_err**2).sum(), s_err.abs().sum(),
-            sums["energy"].double(), sums["forces"].double(), sums["stress"].double(),
-        ])
+        sums = loss_sums(
+            {k: v.detach() for k, v in out.items() if k in ("energy", "forces", "stress")}, batch, loss_cfg
+        )
+        acc += torch.stack(
+            [
+                torch.tensor(float(len(idx)), device=device, dtype=torch.float64),
+                torch.tensor(float(f_err.numel()), device=device, dtype=torch.float64),
+                torch.tensor(float(s_err.numel()), device=device, dtype=torch.float64),
+                e_err.abs().sum(),
+                (e_err**2).sum(),
+                f_err.abs().sum(),
+                (f_err**2).sum(),
+                s_err.abs().sum(),
+                sums["energy"].double(),
+                sums["forces"].double(),
+                sums["stress"].double(),
+            ]
+        )
     acc = all_reduce_sum(acc)
     v = dict(zip(_FIELDS, acc.tolist()))
     counts = {"energy": v["n_graphs"], "forces": v["n_force"], "stress": v["n_stress"]}

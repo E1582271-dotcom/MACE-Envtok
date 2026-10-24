@@ -15,8 +15,19 @@ def test_save_load_roundtrip(val40, tmp_path):
     val40.save(path)
     back = Frames.load(path)
     assert back.sid.tolist() == val40.sid.tolist()
-    for name in ("atom_ptr", "numbers", "positions", "forces", "cell", "pbc", "energy", "stress",
-                 "edge_ptr", "edge_index", "unit_shifts"):
+    for name in (
+        "atom_ptr",
+        "numbers",
+        "positions",
+        "forces",
+        "cell",
+        "pbc",
+        "energy",
+        "stress",
+        "edge_ptr",
+        "edge_index",
+        "unit_shifts",
+    ):
         np.testing.assert_array_equal(getattr(back, name), getattr(val40, name))
 
 

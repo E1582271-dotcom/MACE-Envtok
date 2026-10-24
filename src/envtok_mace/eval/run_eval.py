@@ -57,7 +57,9 @@ def load_model(path: str, device: torch.device, dtype: torch.dtype, backend: str
 
 
 def add_arguments(p: argparse.ArgumentParser) -> None:
-    p.add_argument("--models", nargs="+", required=True, help="checkpoints (.pt) or mace-torch files (.model)")
+    p.add_argument(
+        "--models", nargs="+", required=True, help="checkpoints (.pt) or mace-torch files (.model)"
+    )
     p.add_argument("--labels", nargs="+", default=None)
     p.add_argument("--frames", required=True, help="Frames HDF5 with neighbour lists")
     p.add_argument("--n", type=int, default=None, help="evaluate a fixed random subset of this size")
@@ -65,8 +67,12 @@ def add_arguments(p: argparse.ArgumentParser) -> None:
     p.add_argument("--max-edges", type=int, default=60000, help="edge budget per batch")
     p.add_argument("--device", default="cuda")
     p.add_argument("--dtype", default="float32")
-    p.add_argument("--backend", default=None, choices=[None, "e3nn", "cueq"],
-                   help="evaluate with this backend (default: the one the model was trained with)")
+    p.add_argument(
+        "--backend",
+        default=None,
+        choices=[None, "e3nn", "cueq"],
+        help="evaluate with this backend (default: the one the model was trained with)",
+    )
     p.add_argument("--out", default=None, help="write the results as JSON")
 
 
@@ -93,5 +99,14 @@ def run(args: argparse.Namespace) -> None:
             torch.cuda.empty_cache() if device.type == "cuda" else None
         if args.out:  # written after every model, so partial results survive
             Path(args.out).parent.mkdir(parents=True, exist_ok=True)
-            Path(args.out).write_text(json.dumps({"frames": args.frames, "n_frames": int(len(idx)),
-                                                  "dtype": args.dtype, "results": results}, indent=2))
+            Path(args.out).write_text(
+                json.dumps(
+                    {
+                        "frames": args.frames,
+                        "n_frames": int(len(idx)),
+                        "dtype": args.dtype,
+                        "results": results,
+                    },
+                    indent=2,
+                )
+            )

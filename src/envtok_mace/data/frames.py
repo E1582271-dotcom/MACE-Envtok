@@ -26,18 +26,18 @@ VOIGT_ORDER = ("xx", "yy", "zz", "yz", "xz", "xy")
 
 @dataclass
 class Frames:
-    sid: np.ndarray        # (N,) str
-    source: np.ndarray     # (N,) str, OMat24 sub-dataset or other origin
-    atom_ptr: np.ndarray   # (N+1,) int64
-    numbers: np.ndarray    # (A,) uint8
+    sid: np.ndarray  # (N,) str
+    source: np.ndarray  # (N,) str, OMat24 sub-dataset or other origin
+    atom_ptr: np.ndarray  # (N+1,) int64
+    numbers: np.ndarray  # (A,) uint8
     positions: np.ndarray  # (A, 3) float64, Angstrom
-    forces: np.ndarray     # (A, 3) float64, eV/Angstrom
-    cell: np.ndarray       # (N, 3, 3) float64, rows are lattice vectors
-    pbc: np.ndarray        # (N, 3) bool
-    energy: np.ndarray     # (N,) float64, eV
-    stress: np.ndarray     # (N, 6) float64, eV/Angstrom^3, ASE Voigt order
-    edge_ptr: np.ndarray | None = None     # (N+1,) int64
-    edge_index: np.ndarray | None = None   # (2, E) int32, local indices
+    forces: np.ndarray  # (A, 3) float64, eV/Angstrom
+    cell: np.ndarray  # (N, 3, 3) float64, rows are lattice vectors
+    pbc: np.ndarray  # (N, 3) bool
+    energy: np.ndarray  # (N,) float64, eV
+    stress: np.ndarray  # (N, 6) float64, eV/Angstrom^3, ASE Voigt order
+    edge_ptr: np.ndarray | None = None  # (N+1,) int64
+    edge_index: np.ndarray | None = None  # (2, E) int32, local indices
     unit_shifts: np.ndarray | None = None  # (E, 3) int8
     attrs: dict = field(default_factory=dict)
 
@@ -133,9 +133,14 @@ class Frames:
         """Arrays of frame ``i`` as a dict (views, no copies)."""
         a0, a1 = self.atom_ptr[i], self.atom_ptr[i + 1]
         d = dict(
-            sid=self.sid[i], numbers=self.numbers[a0:a1], positions=self.positions[a0:a1],
-            forces=self.forces[a0:a1], cell=self.cell[i], pbc=self.pbc[i],
-            energy=self.energy[i], stress=self.stress[i],
+            sid=self.sid[i],
+            numbers=self.numbers[a0:a1],
+            positions=self.positions[a0:a1],
+            forces=self.forces[a0:a1],
+            cell=self.cell[i],
+            pbc=self.pbc[i],
+            energy=self.energy[i],
+            stress=self.stress[i],
         )
         if self.has_edges:
             e0, e1 = self.edge_ptr[i], self.edge_ptr[i + 1]

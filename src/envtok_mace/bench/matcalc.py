@@ -80,9 +80,15 @@ def _equilibrium_class():
             return refs
 
         def get_prop_calc(self, calculator, **kwargs):
-            return EnergeticsCalc(calculator, elemental_refs=self._refs(), use_gs_reference=True,
-                                  fmax=0.05, perturb_distance=0.1, optimizer=self.optimizer,
-                                  **kwargs)
+            return EnergeticsCalc(
+                calculator,
+                elemental_refs=self._refs(),
+                use_gs_reference=True,
+                fmax=0.05,
+                perturb_distance=0.1,
+                optimizer=self.optimizer,
+                **kwargs,
+            )
 
         def run(self, calculator, model_name, **kwargs):
             from matminer.featurizers.site import CrystalNNFingerprint
@@ -92,7 +98,8 @@ def _equilibrium_class():
             df = super(EquilibriumBenchmark, self).run(calculator, model_name, **kwargs)
             ssf = SiteStatsFingerprint(
                 CrystalNNFingerprint.from_preset("ops", distance_cutoffs=None, x_diff_weight=0),
-                stats=("mean", "std_dev", "minimum", "maximum"))
+                stats=("mean", "std_dev", "minimum", "maximum"),
+            )
 
             def dist(a, b):
                 if not isinstance(a, Structure) or not isinstance(b, Structure):
@@ -102,8 +109,9 @@ def _equilibrium_class():
                 except Exception:
                     return np.nan
 
-            df[f"d_{model_name}"] = [dist(m, d) for m, d in
-                                     zip(df[f"structure_{model_name}"], df["structure_DFT"])]
+            df[f"d_{model_name}"] = [
+                dist(m, d) for m, d in zip(df[f"structure_{model_name}"], df["structure_DFT"])
+            ]
             return df
 
     return TabulatedRefsEquilibrium
@@ -121,8 +129,11 @@ def build_benchmarks(names=BENCHES, limit: int | None = None, optimizer: str = "
         "Elasticity": lambda: ElasticityBenchmark(
             norm_strains=(-0.01, -0.00666667, -0.00333333, 0.00333333, 0.00666667, 0.01),
             shear_strains=(-0.06, -0.04, -0.02, 0.02, 0.04, 0.06),
-            fmax=0.05, relax_calc_kwargs={"optimizer": optimizer},
-            relax_deformed_structures=True, **kw),
+            fmax=0.05,
+            relax_calc_kwargs={"optimizer": optimizer},
+            relax_deformed_structures=True,
+            **kw,
+        ),
         "Phonon": lambda: PhononBenchmark(optimizer=optimizer, **kw),
         "Softening": lambda: SofteningBenchmark(**kw),
     }
@@ -133,13 +144,15 @@ def filter_allowed(bench) -> int:
     """Drop structures with elements outside the model's table; return how many."""
     if not hasattr(bench, "structures"):
         return 0  # Softening is indexed by id only; filtered by formula at merge time
-    keep = [i for i, s in enumerate(bench.structures)
-            if all(el.Z in ALLOWED_Z for el in s.composition.elements)]
+    keep = [
+        i for i, s in enumerate(bench.structures) if all(el.Z in ALLOWED_Z for el in s.composition.elements)
+    ]
     dropped = len(bench.structures) - len(keep)
     bench.structures = [bench.structures[i] for i in keep]
     gt = bench.ground_truth
-    bench.ground_truth = (gt.iloc[keep].reset_index(drop=True) if hasattr(gt, "iloc")
-                          else [gt[i] for i in keep])
+    bench.ground_truth = (
+        gt.iloc[keep].reset_index(drop=True) if hasattr(gt, "iloc") else [gt[i] for i in keep]
+    )
     return dropped
 
 
@@ -165,8 +178,10 @@ def _log_failures(calc, path: Path) -> None:
     def note(exc, retried=False):
         with path.open("a") as fh:
             first = str(exc).splitlines()[0][:200] if str(exc) else ""
-            fh.write(f"{time.strftime('%H:%M:%S')} {type(exc).__name__}"
-                     f"{' (after retry)' if retried else ''}: {first}\n")
+            fh.write(
+                f"{time.strftime('%H:%M:%S')} {type(exc).__name__}"
+                f"{' (after retry)' if retried else ''}: {first}\n"
+            )
 
     def calculate(*args, **kwargs):
         try:
@@ -186,9 +201,19 @@ def _log_failures(calc, path: Path) -> None:
     calc.calculate = calculate
 
 
-def _run_shard(model: str, label: str, out: str, names: tuple, index: int, count: int,
-               device: str, dtype: str, limit: int | None, threads: int,
-               backend: str | None = None) -> None:
+def _run_shard(
+    model: str,
+    label: str,
+    out: str,
+    names: tuple,
+    index: int,
+    count: int,
+    device: str,
+    dtype: str,
+    limit: int | None,
+    threads: int,
+    backend: str | None = None,
+) -> None:
     import torch
 
     from ..eval.ase_calc import EnvTokCalculator
@@ -211,13 +236,22 @@ def _run_shard(model: str, label: str, out: str, names: tuple, index: int, count
         if name == "Softening":
             df = bench.run(calc, label, checkpoint_file=str(ckpt), checkpoint_freq=10)
         else:
-            df = bench.run(calc, label, n_jobs=1, checkpoint_file=str(ckpt), checkpoint_freq=10,
-                           delete_checkpoint_on_finish=True)
+            df = bench.run(
+                calc,
+                label,
+                n_jobs=1,
+                checkpoint_file=str(ckpt),
+                checkpoint_freq=10,
+                delete_checkpoint_on_finish=True,
+            )
         df = df[[c for c in df.columns if not c.startswith("structure_")]]
         df.to_csv(csv, index=False)
         ckpt.unlink(missing_ok=True)
-        print(f"[{tag}] {name}: {n} structures in {(time.time() - t0) / 60:.1f} min "
-              f"({dropped} dropped for elements) -> {csv.name}", flush=True)
+        print(
+            f"[{tag}] {name}: {n} structures in {(time.time() - t0) / 60:.1f} min "
+            f"({dropped} dropped for elements) -> {csv.name}",
+            flush=True,
+        )
 
 
 def run_benchmarks(args: argparse.Namespace) -> None:
@@ -233,8 +267,22 @@ def run_benchmarks(args: argparse.Namespace) -> None:
     count = world * k
     Path(args.out).mkdir(parents=True, exist_ok=True)
     names = tuple(args.only or BENCHES)
-    jobs = [(args.model, args.label, args.out, names, rank * k + i, count, device, args.dtype,
-             args.limit, max(1, args.threads // k), args.backend) for i in range(k)]
+    jobs = [
+        (
+            args.model,
+            args.label,
+            args.out,
+            names,
+            rank * k + i,
+            count,
+            device,
+            args.dtype,
+            args.limit,
+            max(1, args.threads // k),
+            args.backend,
+        )
+        for i in range(k)
+    ]
     if k == 1:
         _run_shard(*jobs[0])
         return
@@ -316,16 +364,26 @@ def values(df, key: str, unphysical: str = "drop") -> dict:
         v = 100.0 * (p - ref[ok]) / ref[ok]
         if kind == "abs_pct":
             v = np.abs(v)
-    return {"values": v, "n_rows": int(len(df)), "n_failed": int((~np.isfinite(pred)).sum()),
-            "n_unphysical": n_unphysical}
+    return {
+        "values": v,
+        "n_rows": int(len(df)),
+        "n_failed": int((~np.isfinite(pred)).sum()),
+        "n_unphysical": n_unphysical,
+    }
 
 
 def stats(v: np.ndarray) -> dict:
     if v.size == 0:
         return {s: float("nan") for s in STATS}
     q = np.percentile(v, [5, 25, 75, 95])
-    return {"median": float(np.median(v)), "mean": float(v.mean()),
-            "p5": q[0], "p25": q[1], "p75": q[2], "p95": q[3]}
+    return {
+        "median": float(np.median(v)),
+        "mean": float(v.mean()),
+        "p5": q[0],
+        "p25": q[1],
+        "p75": q[2],
+        "p95": q[3],
+    }
 
 
 def summary(dirs: list[str], labels: list[str], unphysical: str = "drop") -> dict:
@@ -342,8 +400,7 @@ def summary(dirs: list[str], labels: list[str], unphysical: str = "drop") -> dic
                 frames[name] = pd.read_csv(hits[0])
         for key, (bench, prefix, *_rest) in QUANTITIES.items():
             df = frames.get(bench)
-            if df is not None and any(c.startswith(prefix) and not c.endswith("_DFT")
-                                      for c in df.columns):
+            if df is not None and any(c.startswith(prefix) and not c.endswith("_DFT") for c in df.columns):
                 per.setdefault(key, {})[label] = values(df, key, unphysical)
     out = {"unphysical": unphysical, "quantities": {}}
     for key, models in per.items():
@@ -354,10 +411,12 @@ def summary(dirs: list[str], labels: list[str], unphysical: str = "drop") -> dic
             groups["random"] = seeds
         for g, members in groups.items():
             v = np.concatenate([models[m]["values"] for m in members])
-            rows[g] = {"n": int(v.size),
-                       "n_failed": sum(models[m]["n_failed"] for m in members),
-                       "n_unphysical": sum(models[m]["n_unphysical"] for m in members),
-                       **stats(v)}
+            rows[g] = {
+                "n": int(v.size),
+                "n_failed": sum(models[m]["n_failed"] for m in members),
+                "n_unphysical": sum(models[m]["n_unphysical"] for m in members),
+                **stats(v),
+            }
         out["quantities"][key] = {"unit": QUANTITIES[key][3], "models": rows}
     return out
 
@@ -373,11 +432,20 @@ def add_arguments(p: argparse.ArgumentParser) -> None:
     p.add_argument("--threads", type=int, default=16, help="CPU threads per GPU, split over workers")
     p.add_argument("--device", default="cuda")
     p.add_argument("--dtype", default="float64")
-    p.add_argument("--backend", default=None, choices=[None, "e3nn", "cueq"],
-                   help="default: the backend the model was trained with")
+    p.add_argument(
+        "--backend",
+        default=None,
+        choices=[None, "e3nn", "cueq"],
+        help="default: the backend the model was trained with",
+    )
     p.add_argument("--merge", action="store_true", help="join this label's shard CSVs")
-    p.add_argument("--summary", nargs="+", default=None, metavar="DIR",
-                   help="score these run directories (with --labels) instead of running")
+    p.add_argument(
+        "--summary",
+        nargs="+",
+        default=None,
+        metavar="DIR",
+        help="score these run directories (with --labels) instead of running",
+    )
     p.add_argument("--labels", nargs="+", default=None)
     p.add_argument("--unphysical", default="drop", choices=["drop", "keep"])
 
@@ -392,8 +460,10 @@ def run(args: argparse.Namespace) -> None:
             scale, unit = (1e3, "meV/atom") if key == "eform" else (1.0, q["unit"])
             print(f"== {key} [{unit}]  (median / mean / p95, n, failed+unphysical)")
             for g, r in q["models"].items():
-                print(f"  {g:16s} {scale * r['median']:9.3f} {scale * r['mean']:9.3f} "
-                      f"{scale * r['p95']:9.3f}   n={r['n']:5d}  excluded={r['n_failed'] + r['n_unphysical']}")
+                print(
+                    f"  {g:16s} {scale * r['median']:9.3f} {scale * r['mean']:9.3f} "
+                    f"{scale * r['p95']:9.3f}   n={r['n']:5d}  excluded={r['n_failed'] + r['n_unphysical']}"
+                )
         return
     if args.merge:
         merge(args.out, args.label)

@@ -28,9 +28,14 @@ def omat_dir(tmp_path):
     root = tmp_path / "omat"
     (root / "rattled-300").mkdir(parents=True)
     (root / "rattled-relax").mkdir(parents=True)
-    _write_db(root / "rattled-300" / "data.aselmdb", [
-        ("s3", [8, 14]), ("s1", [1, 1, 8]), ("re", [57, 8]),  # La: rare earth, dropped
-    ])
+    _write_db(
+        root / "rattled-300" / "data.aselmdb",
+        [
+            ("s3", [8, 14]),
+            ("s1", [1, 1, 8]),
+            ("re", [57, 8]),  # La: rare earth, dropped
+        ],
+    )
     _write_db(root / "rattled-relax" / "data.aselmdb", [("s2", [26, 26]), ("s4", [29])])
     return root
 
