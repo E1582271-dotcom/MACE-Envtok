@@ -155,17 +155,32 @@ def shard(bench, index: int, count: int) -> int:
 # -------------------------------------------------------------------- running
 def _log_failures(calc, path: Path) -> None:
     """matcalc turns any exception inside a calculation into NaN and keeps no
-    trace of it. Record each calculator exception, so a NaN has a stated cause
-    (for example CUDA running out of memory when workers share a GPU)."""
+    trace of it. Record each calculator exception, so a NaN has a stated cause.
+    CUDA running out of memory is retried once after emptying the allocator's
+    cache: supercells of ever new shapes fragment it, and the retry usually fits."""
+    import torch
+
     inner = calc.calculate
+
+    def note(exc, retried=False):
+        with path.open("a") as fh:
+            first = str(exc).splitlines()[0][:200] if str(exc) else ""
+            fh.write(f"{time.strftime('%H:%M:%S')} {type(exc).__name__}"
+                     f"{' (after retry)' if retried else ''}: {first}\n")
 
     def calculate(*args, **kwargs):
         try:
             return inner(*args, **kwargs)
+        except torch.OutOfMemoryError as exc:
+            note(exc)
+            torch.cuda.empty_cache()
+            try:
+                return inner(*args, **kwargs)
+            except Exception as again:
+                note(again, retried=True)
+                raise
         except Exception as exc:
-            with path.open("a") as fh:
-                fh.write(f"{time.strftime('%H:%M:%S')} {type(exc).__name__}: "
-                         f"{str(exc).splitlines()[0][:200] if str(exc) else ''}\n")
+            note(exc)
             raise
 
     calc.calculate = calculate

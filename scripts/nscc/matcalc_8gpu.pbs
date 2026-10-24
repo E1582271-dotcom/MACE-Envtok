@@ -1,8 +1,10 @@
 #!/bin/bash
-# MatCalc-Bench on 8 GPUs from any nodes, a few worker processes per GPU (float64, e3nn).
-# The phonon benchmark relaxes and displaces 2x2x2 supercells: eight float64 workers on
-# one 40 GB GPU run out of memory now and then, and matcalc records each such failure
-# as NaN, so keep WORKERS small. ONLY selects benchmarks (e.g. "Phonon Softening").
+# MatCalc-Bench on 8 GPUs from any nodes, one worker process per GPU by default (float64, e3nn).
+# The phonon benchmark relaxes and displaces supercells; a float64 e3nn worker can hold
+# 20+ GB, so two workers on a 40 GB GPU already run out of memory, and matcalc records
+# each such failure as NaN. Hence one worker per GPU (the authors' layout), an allocator
+# that fragments less, and a retry after an out-of-memory error (in the runner).
+# ONLY selects benchmarks (e.g. "Phonon Softening").
 #   qsub -P <project> -v MODEL=$HOME/envtok_runs/envtok_8gpu/best.pt,ONLY="Phonon Softening" \
 #        scripts/nscc/matcalc_8gpu.pbs
 #PBS -N envtok-mc8
@@ -20,10 +22,11 @@ ranks_layout
 OUT=${OUT:-$ENVTOK_SCRATCH/matcalc_runs}
 AUTH=${AUTH:-$ENVTOK_SCRATCH/zenodo/benchmarks_matcalc/benchmarks/matcalc/6.5M-atoms}
 AUTH_MODEL=${AUTH_MODEL:-$(ls "$REPO_DIR"/local/zenodo/models/models/6.5M-atoms/*v14_T100*.model)}
-WORKERS=${WORKERS:-2}
+WORKERS=${WORKERS:-1}
 CHECK_N=${CHECK_N:-40}
 ONLY_ARGS=${ONLY:+--only $ONLY}
 export OMP_NUM_THREADS=$((16 / WORKERS))
+export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 export RANK_LOG=$ENVTOK_SCRATCH/runs/logs/${PBS_JOBID%%.*}
 mkdir -p "$(dirname "$RANK_LOG")"
 echo "job $PBS_JOBID: $NRANKS GPUs on $RANK_NNODES node(s); per-node output: $RANK_LOG.<host>.log"
