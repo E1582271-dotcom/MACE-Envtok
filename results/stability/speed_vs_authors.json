@@ -1,0 +1,15 @@
+{
+ "cueq": {
+  "n_runs": 70,
+  "median_s_per_step_ours": 0.0660006642284569,
+  "median_s_per_step_authors": 0.16174120486541,
+  "median_speedup": 2.511512694750437
+ },
+ "e3nn": {
+  "n_runs": 10,
+  "median_s_per_step_ours": 0.23090446707251544,
+  "median_s_per_step_authors": 0.3027077622469988,
+  "median_speedup": 1.347492819174907
+ },
+ "note": "Median wall seconds per MD step over each full NPT run, against the authors' EnvTok runs on the same structures. 70 runs used the cuEquivariance backend; the 10 runs re-done after a cuEquivariance kernel fault used e3nn. Speed sets how far a run gets within the protocol's 1,800 s budget, hence the speed-matched rows in stability_summary.json."
+}
