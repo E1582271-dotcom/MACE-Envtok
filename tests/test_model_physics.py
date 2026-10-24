@@ -90,7 +90,7 @@ def test_stress_matches_finite_strain(model, val40):
     for i, j in [(0, 0), (1, 2), (2, 2)]:
         eps = np.zeros((3, 3))
         eps[i, j] = eps[j, i] = h / (2 if i != j else 1)
-        def energy(sign):
+        def energy(sign, eps=eps):
             d = np.eye(3) + sign * eps
             return model(_single(pos @ d, z, cell @ d), compute_force=False)["energy"].item()
         de = (energy(+1) - energy(-1)) / (2 * h)

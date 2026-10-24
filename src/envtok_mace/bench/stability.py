@@ -120,7 +120,7 @@ def run_one(idx: int, atoms, calc, out: Path, label: str, timeout: float = 600.0
                 # CUDA context unusable, so every later run here would fail at once.
                 # It says nothing about the model: leave the run unfinished for a rerun
                 # and stop this rank.
-                raise SystemExit(f"CUDA device error in {path.name}; rank stopped, rerun needed")
+                raise SystemExit(f"CUDA device error in {path.name}; rank stopped, rerun needed") from None
             last = "oom" if "out of memory" in tb.lower() else "crash"
         finally:
             try:

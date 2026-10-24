@@ -135,7 +135,8 @@ def build_reference_mace(cfg: MACEConfig, avg_num_neighbors: float = 40.0):
     from e3nn import o3
     from mace import modules
 
-    hidden = " + ".join(f"{cfg.num_channels}x{l}{'e' if l % 2 == 0 else 'o'}" for l in range(cfg.max_L + 1))
+    hidden = " + ".join(f"{cfg.num_channels}x{ell}{'e' if ell % 2 == 0 else 'o'}"
+                        for ell in range(cfg.max_L + 1))
     return modules.ScaleShiftMACE(
         r_max=cfg.r_max,
         num_bessel=cfg.num_bessel,

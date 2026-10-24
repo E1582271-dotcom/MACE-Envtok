@@ -60,9 +60,9 @@ def o3_e3nn_group():
 
         @classmethod
         def iterator(cls):
-            for l in itertools.count(0):
-                yield O3_e3nn(l=l, p=1 * (-1) ** l)
-                yield O3_e3nn(l=l, p=-1 * (-1) ** l)
+            for ell in itertools.count(0):
+                yield O3_e3nn(l=ell, p=1 * (-1) ** ell)
+                yield O3_e3nn(l=ell, p=-1 * (-1) ** ell)
 
     _O3_E3NN = O3_e3nn
     return _O3_E3NN

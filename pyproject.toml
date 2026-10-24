@@ -1,6 +1,6 @@
 [project]
 name = "envtok-mace"
-version = "0.1.0"
+version = "0.9.0"
 description = "From-scratch MACE interatomic potential with multi-node DDP training on the EnvTok subset of OMat24"
 readme = "README.md"
 license = { file = "LICENSE" }
@@ -15,6 +15,7 @@ dependencies = [
     "h5py",
     "pyyaml",
     "ase-db-backends>=0.11.0",
+    "matplotlib>=3.8",
 ]
 
 [project.optional-dependencies]
@@ -41,6 +42,10 @@ bench = [
     "litraj==0.1",
     "pyarrow",
 ]
+
+[project.urls]
+Repository = "https://github.com/E1582271-dotcom/MACE-Envtok"
+Paper = "https://arxiv.org/abs/2610.14392"
 
 [project.scripts]
 envtok-mace = "envtok_mace.cli:main"
@@ -71,3 +76,16 @@ filterwarnings = [
     "ignore:The TorchScript type system:UserWarning",
     "ignore:Setting the shape on a NumPy array:DeprecationWarning",
 ]
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+extend-exclude = ["local"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+# zip() without strict= is used deliberately on equal-length sequences throughout
+ignore = ["B905"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["envtok_mace"]

@@ -49,7 +49,7 @@ class MACEConfig:
         return d
 
     @classmethod
-    def from_dict(cls, d: dict) -> "MACEConfig":
+    def from_dict(cls, d: dict) -> MACEConfig:
         d = dict(d)
         d["radial_mlp"] = tuple(d["radial_mlp"])
         d["z_table"] = tuple(d["z_table"])
@@ -71,7 +71,7 @@ class MACE(nn.Module):
         self.register_buffer("shift", torch.tensor(cfg.shift, dtype=dtype))
 
         attrs = o3.Irreps(f"{Z}x0e")
-        hidden = o3.Irreps([(C, (l, (-1) ** l)) for l in range(cfg.max_L + 1)])
+        hidden = o3.Irreps([(C, (ell, (-1) ** ell)) for ell in range(cfg.max_L + 1)])
         scalars = o3.Irreps(f"{C}x0e")
         sh = o3.Irreps.spherical_harmonics(cfg.max_ell)
         inter = (sh * C).sort().irreps.simplify()  # C x (0e + 1o + 2e + 3o)

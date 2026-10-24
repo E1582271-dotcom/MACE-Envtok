@@ -71,7 +71,7 @@ class TrainConfig:
     interrupt_after_steps: int | None = None  # behave as if walltime ran out (tests of resume)
 
     @classmethod
-    def from_yaml(cls, path: str | Path, overrides: dict | None = None) -> "TrainConfig":
+    def from_yaml(cls, path: str | Path, overrides: dict | None = None) -> TrainConfig:
         data = yaml.safe_load(Path(path).read_text()) or {}
         data.update(overrides or {})
         for key in ("train_file", "val_file", "out_dir"):  # allow ${ENVTOK_DATA} etc. in paths

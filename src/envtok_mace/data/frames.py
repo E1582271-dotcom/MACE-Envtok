@@ -73,7 +73,7 @@ class Frames:
             assert self.edge_index.shape == (2, e) and self.unit_shifts.shape == (e, 3)
 
     # ---------------------------------------------------------------- indexing
-    def subset(self, idx: np.ndarray) -> "Frames":
+    def subset(self, idx: np.ndarray) -> Frames:
         """Return the frames at positions ``idx`` (in that order) as a new object."""
         idx = np.asarray(idx, dtype=np.int64)
         a0, a1 = self.atom_ptr[idx], self.atom_ptr[idx + 1]
@@ -102,7 +102,7 @@ class Frames:
         return Frames(**out)
 
     @staticmethod
-    def concatenate(parts: list["Frames"]) -> "Frames":
+    def concatenate(parts: list[Frames]) -> Frames:
         parts = [p for p in parts if len(p)]
         if not parts:
             raise ValueError("nothing to concatenate")
@@ -179,7 +179,7 @@ class Frames:
         tmp.replace(path)
 
     @classmethod
-    def load(cls, path: str | Path) -> "Frames":
+    def load(cls, path: str | Path) -> Frames:
         with h5py.File(path, "r") as h:
             if int(h.attrs.get("format_version", -1)) != FORMAT_VERSION:
                 raise ValueError(f"{path}: unsupported format version")

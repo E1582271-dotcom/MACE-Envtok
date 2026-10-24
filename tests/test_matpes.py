@@ -8,7 +8,6 @@ import torch
 
 from envtok_mace.bench import matpes as bench
 from envtok_mace.data import matpes as ingest
-from envtok_mace.data.frames import Frames
 from envtok_mace.data.samplers import eval_shards
 
 # A record in the shape of the MatPES release: a pymatgen structure dict plus

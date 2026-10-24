@@ -67,7 +67,6 @@ def score(model, frames: Frames, batches: list[np.ndarray], device: torch.device
         ng = batch.num_graphs
         g, na = batch.batch, batch.natoms.double()
         df = (out["forces"].detach() - batch.forces).double()
-        err = df.norm(dim=1)
         zeros = torch.zeros(ng, dtype=torch.float64, device=device)
         f_abs = zeros.clone().index_add_(0, g, df.abs().sum(dim=1))
         f_sq = zeros.clone().index_add_(0, g, (df**2).sum(dim=1))
