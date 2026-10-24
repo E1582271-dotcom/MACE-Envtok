@@ -156,7 +156,7 @@ def write(rows: list[dict], out: Path) -> None:
     out.mkdir(parents=True, exist_ok=True)
     keys = ["category", "test", "metric", "unit", "better", *COLUMNS]
     with (out / "id_ood_summary.csv").open("w", newline="") as fh:
-        w = csv.DictWriter(fh, fieldnames=keys)
+        w = csv.DictWriter(fh, fieldnames=keys, lineterminator="\n")
         w.writeheader()
         for r in rows:
             w.writerow({k: (f"{r[k]:.4g}" if isinstance(r[k], float) else r[k]) for k in keys})

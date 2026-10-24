@@ -1,0 +1,10 @@
+# Normalise line endings; binary data is never diffed or merged as text.
+* text=auto eol=lf
+*.h5 binary
+*.png binary
+*.pdf binary
+*.npz binary
+
+# Generated files: collapsed in GitHub diffs and left out of the language statistics.
+uv.lock linguist-generated=true
+results/** linguist-generated=true

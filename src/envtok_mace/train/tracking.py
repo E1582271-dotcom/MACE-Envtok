@@ -46,7 +46,9 @@ class Tracker:
                 with open(path, newline="") as f:
                     fieldnames = next(csv.reader(f))
             fh = open(path, "a", newline="")
-            writer = csv.DictWriter(fh, fieldnames=fieldnames, extrasaction="ignore", restval="")
+            writer = csv.DictWriter(
+                fh, fieldnames=fieldnames, extrasaction="ignore", restval="", lineterminator="\n"
+            )
             if new:
                 writer.writeheader()
             self._files[table] = (fh, writer)

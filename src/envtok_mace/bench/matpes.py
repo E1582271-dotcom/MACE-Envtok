@@ -286,7 +286,7 @@ def write_tables(result: dict, out_dir: str | Path, scale: float = 1e3) -> None:
         for dk, dom in meta["domains"].items():
             path = out_dir / f"{key}_{dk}.csv"
             with path.open("w", newline="") as fh:
-                w = csv.writer(fh)
+                w = csv.writer(fh, lineterminator="\n")
                 w.writerow([f"# {key} over domain {dk}, in {meta['unit']}"])
                 w.writerow([f"# {dom['n']} structures, winsor cap {scale * dom['cap']:.6g} {meta['unit']}"])
                 w.writerow(["estimator"] + labels)
