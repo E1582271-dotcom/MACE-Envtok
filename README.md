@@ -280,6 +280,15 @@ uv run envtok-mace train --config configs/train/debug_cpu.yaml   # tiny end-to-e
 uv run envtok-mace figures                 # redraw every figure from results/
 ```
 
+Ten tests are skipped until their inputs are present. Eight check our code
+against the authors' released EnvTok model, including the parity with
+mace-torch; two need the benchmark dependencies:
+
+```bash
+bash scripts/data/download_zenodo.sh local/zenodo models.zip   # the authors' models, 358 MB
+uv sync --extra bench
+```
+
 The full pipeline runs on a cluster. Each step is a CLI command with a matching
 job script in `scripts/nscc/`, described in [docs/NSCC.md](docs/NSCC.md):
 

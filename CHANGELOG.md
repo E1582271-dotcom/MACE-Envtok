@@ -6,6 +6,11 @@ All notable changes to this project are recorded here. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- The README and the test skip message say how to enable the ten tests that are
+  skipped by default: the authors' models from Zenodo and the `bench` extra.
+
 ## [1.0.0] - 2026-10-24
 
 Public release with the trained weights.

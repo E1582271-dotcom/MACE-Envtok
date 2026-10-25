@@ -21,7 +21,10 @@ def envtok_model_path():
     """Path of the authors' released EnvTok model, if it has been downloaded."""
     hits = sorted(ZENODO_MODELS.glob("*v14_T100*.model")) if ZENODO_MODELS.exists() else []
     if not hits:
-        pytest.skip("authors' EnvTok model not downloaded (scripts/data/download_zenodo.sh)")
+        pytest.skip(
+            "authors' EnvTok model not downloaded "
+            "(bash scripts/data/download_zenodo.sh local/zenodo models.zip)"
+        )
     return str(hits[0])
 
 
