@@ -10,6 +10,16 @@ All notable changes to this project are recorded here. The format follows
 
 - The README and the test skip message say how to enable the ten tests that are
   skipped by default: the authors' models from Zenodo and the `bench` extra.
+- The README states the single-GPU training throughput against mace-torch, and
+  `docs/BENCHMARKS.md` names the file behind the MD speed-ups.
+- `results/eval/val10_ours_epoch510_vs_authors.json` is now
+  `results/eval/val10_authors_envtok.json`. It keeps only the authors' model,
+  which is the reference line in the training figure. The entry for a
+  mid-training checkpoint of ours is dropped; the training curve has every epoch.
+
+### Removed
+
+- Empty-directory placeholders (`.gitkeep`) from folders that now hold files.
 
 ## [1.0.0] - 2026-10-24
 

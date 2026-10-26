@@ -100,6 +100,8 @@ structures, our runs were faster:
 | cuEquivariance | 70 | 2.5× |
 | e3nn | 10 | 1.35× |
 
+The per-step medians are in `results/stability/speed_vs_authors.json`.
+
 So every model is also scored with each run cut where the authors' EnvTok setup
 would have run out of time ("at their speed"). Scoring the authors' runs this way
 leaves them unchanged.

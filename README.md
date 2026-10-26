@@ -89,6 +89,11 @@ passes the authors' EnvTok model on the same frames at epoch 346 (forces) and
 (7 nodes at 8 GPUs); the efficiency relative to linear scaling is printed at
 each point.*
 
+On one A100 with the same cuEquivariance kernels, a training step of this
+implementation reaches 94 % of the throughput of mace-torch: 1,389 against
+1,470 structures/s at 128 structures per step
+([results/benchmarks/speed_a100_val_r300s.jsonl](results/benchmarks/speed_a100_val_r300s.jsonl)).
+
 ## Results
 
 The comparison models are the authors' released ones, scored by the same code

@@ -3,16 +3,6 @@
   "n_frames": 65775,
   "dtype": "float32",
   "results": {
-    "ours_epoch510": {
-      "model": "${ENVTOK_SCRATCH}/runs/envtok_8gpu_best_snapshot.pt",
-      "loss": 0.010767031461000443,
-      "energy_mae_meV_per_atom": 24.845625507235244,
-      "energy_rmse_meV_per_atom": 99.1819508657328,
-      "force_mae_meV_per_A": 111.65696254638684,
-      "force_rmse_meV_per_A": 904.9822976194149,
-      "stress_mae_meV_per_A3": 2.89836058789221,
-      "n_structures": 65775
-    },
     "authors_envtok": {
       "model": "local/zenodo/models/models/6.5M-atoms/mace-subset-2nd_gen_chemenv_v14_T100_a1_suppm-omat-medium-be1024_universal_loss_dft_e0s_use_stress_delta_0.01_lr_0.001_rb10_run-1.model",
       "loss": 0.011055691167712212,
