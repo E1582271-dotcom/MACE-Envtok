@@ -1,5 +1,5 @@
 #!/bin/bash
-# M3 pilot on 8 A100s from any nodes: GPU backend check, NCCL bandwidth,
+# Pilot run on 8 A100s from any nodes: GPU backend check, NCCL bandwidth,
 # 1/2/4/8-GPU scaling, 8-GPU vs 1-GPU equivalence, and resuming 8 -> 4 GPUs.
 # Every step logs to $OUT/<step>.log as it runs and has a time limit.
 #   qsub -P <project> scripts/nscc/pilot_8gpu.pbs

@@ -342,7 +342,7 @@ def training(results: Path, out: Path) -> None:
     lr = np.array([float(r["lr"]) for r in rows])[keep]
     loss = np.array([float(r["loss"]) for r in rows])[keep]
     best = int(ep[np.argmin(loss)])
-    ref = _json(results / "eval/val10_ours_epoch510_vs_authors.json")["results"]["authors_envtok"]
+    ref = _json(results / "eval/val10_authors_envtok.json")["results"]["authors_envtok"]
     with style():
         fig, axes = plt.subplots(
             3,
