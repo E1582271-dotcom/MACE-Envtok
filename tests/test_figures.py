@@ -48,7 +48,7 @@ def test_every_figure_renders_without_layout_problems(tmp_path):
         for ext in ("svg", "pdf", "png"):
             assert (tmp_path / f"{name}.{ext}").stat().st_size > 0
     assert {k: v for k, v in figures.PROBLEMS.items() if v} == {}
-    assert len(figures.PROBLEMS) == 8
+    assert set(figures.PROBLEMS) == set(figures.FIGURES)  # each figure saved under its own name
     # every font declaration in the SVGs falls back to a sans-serif face
     import re
 
