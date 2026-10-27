@@ -159,7 +159,7 @@ def test_reduction_tables(val40, tmp_path):
         s = out["summary"]["models"][label]["domains"]["all"]
         assert s["energy_mae_meV_per_atom"] == pytest.approx(10 * k)
         assert s["force_mae_meV_per_A"] == pytest.approx(50 * k)
-        assert s["stress_mae_meV_per_A3"] == pytest.approx(1 * k)
+        assert s["stress_mae_voigt6_meV_per_A3"] == pytest.approx(1 * k)
         assert s["n_structures"] == n and s["n_atoms"] == a
         for q, total in (("energy", n), ("forces", 3 * a), ("stress", 6 * n)):
             c = out["parity"]["counts"][label]["all"][q]

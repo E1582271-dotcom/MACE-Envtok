@@ -4,7 +4,8 @@ Input: one predictions file per model (``eval/predictions.py``), all made on the
 frames. Output, in ``--out``, small enough for ``results/``:
 
 - ``summary.json``: per model and domain, MAE / RMSE / R^2 and error quantiles of the
-  energy per atom, the force components and the stress components;
+  energy per atom, the force components and the six Voigt stress components (the
+  stress MAE of ``eval`` averages all nine tensor components, so it is smaller);
 - ``parity.json``: 2-D histograms of predicted against DFT values on bins shared by
   every model, stored sparse (forces on asinh-spaced bins, because their range spans
   five decades);
@@ -107,9 +108,9 @@ def summary(err: dict, smask: np.ndarray, amask: np.ndarray) -> dict:
         "force_rmse_meV_per_A": 1e3 * float(np.sqrt((f_err**2).mean())),
         "force_r2": _r2(f_ref, f_err),
         "force_err_norm_meV_per_A": _quantiles(np.linalg.norm(f_err, axis=1), 1e3),
-        "stress_mae_meV_per_A3": 1e3 * float(np.abs(s_err).mean()),
+        "stress_mae_voigt6_meV_per_A3": 1e3 * float(np.abs(s_err).mean()),
         "stress_r2": _r2(s_ref, s_err),
-        "stress_mae_voigt6_meV_per_A3": _quantiles(np.abs(s_err).mean(axis=1), 1e3),
+        "stress_struct_mae_voigt6_meV_per_A3": _quantiles(np.abs(s_err).mean(axis=1), 1e3),
     }
 
 
@@ -187,7 +188,7 @@ def per_source(run: dict, err: dict, smask, amask) -> list[dict]:
                 "n_atoms": int(a.sum()),
                 "energy_mae_meV_per_atom": 1e3 * float(np.abs(err["e_err"][s]).mean()),
                 "force_mae_meV_per_A": 1e3 * float(np.abs(err["f_err"][a]).mean()),
-                "stress_mae_meV_per_A3": 1e3 * float(np.abs(err["s_err"][s]).mean()),
+                "stress_mae_voigt6_meV_per_A3": 1e3 * float(np.abs(err["s_err"][s]).mean()),
             }
         )
     return rows
