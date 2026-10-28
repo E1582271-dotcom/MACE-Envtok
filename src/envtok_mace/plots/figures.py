@@ -328,11 +328,20 @@ def _moving_average(y: np.ndarray, window: int) -> np.ndarray:
 TRAIN_LOSS_WINDOW = 9  # epochs; each epoch's training loss is the mean of only ~15 logged steps
 
 # how each data set is drawn in the learning curves; every line is this work's model
+# Validation and test nearly coincide, so the test markers are open and the validation
+# line is drawn over them.
 LEARNING_SETS = {
-    "train": {"label": "Training set", "ls": (0, (4, 2)), "marker": "v"},
-    "val": {"label": "Validation set (selects the best epoch)", "ls": "-", "marker": None},
-    "test": {"label": "Held-out test set", "ls": (0, (1.2, 1.6)), "marker": "o"},
+    "train": {"label": "Training set", "ls": (0, (4, 2)), "marker": "v", "mfc": None, "z": 2},
+    "val": {
+        "label": "Validation set (selects the best epoch)",
+        "ls": "-",
+        "marker": None,
+        "mfc": None,
+        "z": 3,
+    },
+    "test": {"label": "Held-out test set", "ls": (0, (1.2, 1.6)), "marker": "o", "mfc": "white", "z": 2},
 }
+LEARNING_MARKER = 2.6
 
 
 @figure
@@ -362,7 +371,10 @@ def training(results: Path, out: Path) -> None:
         """Markers only on the archived checkpoints; a value every epoch is a plain line."""
         s = LEARNING_SETS[which]
         marker = None if every_epoch else s["marker"]
-        ax.plot(x, y, color=navy, lw=1.0, ls=s["ls"], marker=marker, ms=3, zorder=2)
+        ax.plot(
+            x, y, color=navy, lw=1.0, ls=s["ls"], marker=marker, ms=LEARNING_MARKER,
+            mfc=s["mfc"] or navy, mew=0.8, zorder=s["z"],
+        )  # fmt: skip
 
     with style():
         # one row of the four curves, the learning rate as a strip underneath, the key on top
@@ -427,7 +439,9 @@ def training(results: Path, out: Path) -> None:
                 lw=1.0,
                 ls=s["ls"],
                 marker=s["marker"] if ckpt else None,
-                ms=3,
+                ms=LEARNING_MARKER,
+                mfc=s["mfc"] or navy,
+                mew=0.8,
                 label=s["label"],
             )
             for k, s in LEARNING_SETS.items()

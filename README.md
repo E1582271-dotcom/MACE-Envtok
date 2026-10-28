@@ -82,10 +82,23 @@ with PBS's task manager. NCCL runs over TCP on the Slingshot interfaces
   <img src="results/figures/training.svg" width="100%" alt="Validation loss, force, energy and stress MAE, and learning rate against epoch">
 </p>
 
-*Learning curves on the 10 % validation subset used for early stopping. The loss
-is the weighted Huber loss the model is trained on. Our model passes the
-authors' EnvTok model on the same frames at epoch 346 (forces) and 496
-(energies).*
+*Learning curves. The validation set is the 10 % OMat24 validation subset used
+for early stopping; it is scored every epoch. The training loss is the mean of
+the logged optimiser steps, smoothed over 9 epochs. Training- and test-set
+errors come from the checkpoints archived every 25 epochs, each scored on
+65,775 frames: a fixed random sample of the training set, and of the 90 %
+held-out set. Re-scored on the validation set, those checkpoints reproduce the
+logged validation metrics to 1e-8.*
+
+*Validation and test agree throughout (108.9 against 110.8 meV Å⁻¹ at the last
+archive), so selecting the epoch on validation did not overfit to it. The
+training set is not drawn like the other two. The EnvTok selection holds
+smaller cells (8.3 atoms against 18.3) with larger forces (11 % of atoms above
+5 eV Å⁻¹, against 7.5 %). Its per-atom energy and stress errors are therefore
+higher than validation even though the model was fitted to it. Only its force
+error and loss are lower, and the gap in the loss widens after the learning
+rate starts to drop. Our model passes the authors' EnvTok model on the
+validation frames at epoch 346 (forces) and 496 (energies).*
 
 <p align="center">
   <img src="results/figures/scaling.svg" width="49%" alt="Training throughput against number of GPUs, with linear scaling for reference">

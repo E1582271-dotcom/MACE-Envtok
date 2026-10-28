@@ -17,9 +17,11 @@ All notable changes to this project are recorded here. The format follows
 ### Changed
 
 - The training figure has five panels: loss, force, energy and stress MAE, and
-  the learning rate. The validation loss and stress MAE were logged but not
-  drawn before. Training-loss and train/test lines appear once their tables are
-  in `results/`.
+  the learning rate. Each panel shows the training, validation and held-out
+  test sets: the training loss comes from the step log, and the training- and
+  test-set errors from the 27 archived checkpoints
+  (`results/runs/envtok_8gpu/train_loss.csv`, `checkpoints.csv`). The
+  validation loss and stress MAE were logged before but not drawn.
 
 - The README and the test skip message say how to enable the ten tests that are
   skipped by default: the authors' models from Zenodo and the `bench` extra.
