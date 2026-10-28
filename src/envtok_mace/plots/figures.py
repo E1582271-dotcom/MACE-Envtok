@@ -319,6 +319,14 @@ def _log_ticks(ax, values) -> None:
     ax.minorticks_off()
 
 
+def _moving_average(y: np.ndarray, window: int) -> np.ndarray:
+    """Centred moving average; near the ends it averages over the points that exist."""
+    kernel = np.ones(window)
+    return np.convolve(y, kernel, mode="same") / np.convolve(np.ones_like(y), kernel, mode="same")
+
+
+TRAIN_LOSS_WINDOW = 9  # epochs; each epoch's training loss is the mean of only ~15 logged steps
+
 # how each data set is drawn in the learning curves; every line is this work's model
 LEARNING_SETS = {
     "train": {"label": "Training set", "ls": (0, (4, 2)), "marker": "v"},
@@ -332,9 +340,10 @@ def training(results: Path, out: Path) -> None:
     """Did training converge, did it overfit, and where did it stop?
 
     Validation is scored after every epoch. The training loss is the mean of the step
-    losses logged during an epoch (``train_loss.csv``), and the training- and test-set
-    errors come from the checkpoints archived every 25 epochs (``checkpoints.csv``);
-    each is drawn when its table is in ``results/``.
+    losses logged during an epoch (``train_loss.csv``, about 15 steps per epoch), drawn
+    as a centred moving average over ``TRAIN_LOSS_WINDOW`` epochs. The training- and
+    test-set errors come from the checkpoints archived every 25 epochs
+    (``checkpoints.csv``). Each is drawn when its table is in ``results/``.
     """
     import matplotlib.pyplot as plt
     from matplotlib.lines import Line2D
@@ -381,7 +390,7 @@ def training(results: Path, out: Path) -> None:
             shown = [col[key]]
             curve(ax, ep, col[key], "val", every_epoch=True)
             if key == "loss" and train_loss:
-                y = np.array([float(r["loss_mean"]) for r in train_loss])
+                y = _moving_average(np.array([float(r["loss_mean"]) for r in train_loss]), TRAIN_LOSS_WINDOW)
                 curve(ax, [int(r["epoch"]) for r in train_loss], y, "train", every_epoch=True)
                 shown.append(y)
             for which in ("train", "test"):
@@ -409,8 +418,18 @@ def training(results: Path, out: Path) -> None:
             letter(ax, "abcde"[i], x=-0.1 if i < 4 else -0.045)
 
         drawn = ["val"] + (["train"] if train_loss or ckpt else []) + (["test"] if ckpt else [])
+        # markers stand for the archived checkpoints, so they appear in the key only with them
         handles = [
-            Line2D([], [], color=navy, lw=1.0, ls=s["ls"], marker=s["marker"], ms=3, label=s["label"])
+            Line2D(
+                [],
+                [],
+                color=navy,
+                lw=1.0,
+                ls=s["ls"],
+                marker=s["marker"] if ckpt else None,
+                ms=3,
+                label=s["label"],
+            )
             for k, s in LEARNING_SETS.items()
             if k in drawn
         ]
