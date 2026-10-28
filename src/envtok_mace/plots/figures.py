@@ -356,19 +356,28 @@ def training(results: Path, out: Path) -> None:
         ax.plot(x, y, color=navy, lw=1.0, ls=s["ls"], marker=marker, ms=3, zorder=2)
 
     with style():
-        fig, axes = plt.subplots(2, 3, figsize=(DOUBLE_COLUMN_IN, 4.4), sharex=True)
-        panels = (
-            (axes[0, 0], "loss", "Loss (weighted Huber)", None),
-            (axes[0, 1], "force_mae_meV_per_A", "Force MAE (meV Å$^{-1}$)", "force_mae_meV_per_A"),
-            (
-                axes[0, 2],
-                "energy_mae_meV_per_atom",
-                "Energy MAE (meV atom$^{-1}$)",
-                "energy_mae_meV_per_atom",
-            ),
-            (axes[1, 0], "stress_mae_meV_per_A3", "Stress MAE (meV Å$^{-3}$)", "stress_mae_meV_per_A3"),
+        # one row of the four curves, the learning rate as a strip underneath, the key on top
+        fig = plt.figure(figsize=(DOUBLE_COLUMN_IN, 3.1))
+        grid = fig.add_gridspec(
+            2,
+            4,
+            height_ratios=[1, 0.3],
+            left=0.055,
+            right=0.99,
+            top=0.8,
+            bottom=0.13,
+            hspace=0.6,
+            wspace=0.34,
         )
-        for ax, key, label, ref_key in panels:
+        axes = [fig.add_subplot(grid[0, i]) for i in range(4)]
+        lr_ax = fig.add_subplot(grid[1, :])
+        panels = (
+            (axes[0], "loss", "Loss (weighted Huber)", None),
+            (axes[1], "force_mae_meV_per_A", "Force MAE (meV Å$^{-1}$)", "force_mae_meV_per_A"),
+            (axes[2], "energy_mae_meV_per_atom", "Energy MAE (meV atom$^{-1}$)", "energy_mae_meV_per_atom"),
+            (axes[3], "stress_mae_meV_per_A3", "Stress MAE (meV Å$^{-3}$)", "stress_mae_meV_per_A3"),
+        )
+        for ax, key, title, ref_key in panels:
             shown = [col[key]]
             curve(ax, ep, col[key], "val", every_epoch=True)
             if key == "loss" and train_loss:
@@ -377,7 +386,7 @@ def training(results: Path, out: Path) -> None:
                 shown.append(y)
             for which in ("train", "test"):
                 pts = [r for r in ckpt if r["set"] == which]
-                if pts and key != "loss":
+                if pts:  # eval scores the same loss, so the checkpoints go on the loss panel too
                     y = np.array([float(r[key]) for r in pts])
                     curve(ax, [int(r["epoch"]) for r in pts], y, which)
                     shown.append(y)
@@ -387,22 +396,18 @@ def training(results: Path, out: Path) -> None:
             ax.axvline(best, color=INK["grid"], lw=0.8, zorder=0)
             ax.set_yscale("log")
             _log_ticks(ax, np.concatenate([np.ravel(v) for v in shown]))
-            ax.set_ylabel(label)
-        lr_ax = axes[1, 1]
+            ax.set_title(title, loc="left", pad=4)
+            ax.set_xlim(-10, ep.max() + 10)
+            ax.set_xticks([0, 200, 400, 600])
         lr_ax.step(ep, col["lr"], where="post", color=navy, lw=1.0)
         lr_ax.axvline(best, color=INK["grid"], lw=0.8, zorder=0)
         lr_ax.set_yscale("log")
-        lr_ax.set_ylabel("Learning rate")
-        axes[0, 2].tick_params(labelbottom=True)  # nothing below it to carry the epoch axis
-        for ax in (axes[1, 0], axes[1, 1], axes[0, 2]):
-            ax.set_xlabel("Epoch")
-        axes[0, 0].set_xlim(-10, ep.max() + 10)
-        for i, ax in enumerate(list(axes[0]) + list(axes[1, :2])):
-            letter(ax, "abcde"[i], x=-0.25)
+        lr_ax.set_xlim(-10, ep.max() + 10)
+        lr_ax.set_title("Learning rate", loc="left", pad=3)
+        lr_ax.set_xlabel("Epoch (777 optimiser steps of 1,024 structures each)")
+        for i, ax in enumerate([*axes, lr_ax]):
+            letter(ax, "abcde"[i], x=-0.1 if i < 4 else -0.045)
 
-        # the last cell holds the key and the numbers at the best epoch
-        key_ax = axes[1, 2]
-        key_ax.axis("off")
         drawn = ["val"] + (["train"] if train_loss or ckpt else []) + (["test"] if ckpt else [])
         handles = [
             Line2D([], [], color=navy, lw=1.0, ls=s["ls"], marker=s["marker"], ms=3, label=s["label"])
@@ -417,21 +422,15 @@ def training(results: Path, out: Path) -> None:
         handles.append(
             Line2D([], [], color=INK["grid"], lw=0.8, label=f"Best epoch {best} (early stop {ep.max()})")
         )
-        key_ax.legend(handles=handles, loc="upper left", fontsize=6, handlelength=2.6, borderaxespad=0)
-        at_best = col["force_mae_meV_per_A"][ep == best][0], col["energy_mae_meV_per_atom"][ep == best][0]
-        key_ax.text(
-            0.0,
-            0.52,
-            f"Validation at the best epoch:\nforce {at_best[0]:.1f} meV Å$^{{-1}}$\n"
-            f"energy {at_best[1]:.1f} meV atom$^{{-1}}$\n"
-            "One epoch: 777 optimiser steps\nof 1,024 structures",
-            transform=key_ax.transAxes,
+        fig.legend(
+            handles=handles,
+            loc="lower left",  # bottom edge fixed above the titles; more entries grow upwards
+            bbox_to_anchor=(0.045, 0.88),
+            ncol=3,
             fontsize=6,
-            va="top",
-            ha="left",
-            color=INK["ink2"],
+            handlelength=2.6,
+            columnspacing=1.6,
         )
-        fig.subplots_adjust(left=0.08, right=0.99, top=0.95, bottom=0.1, hspace=0.3, wspace=0.42)
         save(fig, out, "training")
 
 
