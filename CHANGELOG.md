@@ -16,6 +16,11 @@ All notable changes to this project are recorded here. The format follows
 
 ### Changed
 
+- The training figure has five panels: loss, force, energy and stress MAE, and
+  the learning rate. The validation loss and stress MAE were logged but not
+  drawn before. Training-loss and train/test lines appear once their tables are
+  in `results/`.
+
 - The README and the test skip message say how to enable the ten tests that are
   skipped by default: the authors' models from Zenodo and the `bench` extra.
 - The README states the single-GPU training throughput against mace-torch, and

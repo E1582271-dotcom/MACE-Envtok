@@ -79,15 +79,20 @@ with PBS's task manager. NCCL runs over TCP on the Slingshot interfaces
 ([docs/NSCC.md](docs/NSCC.md)).
 
 <p align="center">
-  <img src="results/figures/training.svg" width="49%" alt="Validation force and energy MAE and learning rate against epoch">
+  <img src="results/figures/training.svg" width="100%" alt="Validation loss, force, energy and stress MAE, and learning rate against epoch">
+</p>
+
+*Learning curves on the 10 % validation subset used for early stopping. The loss
+is the weighted Huber loss the model is trained on. Our model passes the
+authors' EnvTok model on the same frames at epoch 346 (forces) and 496
+(energies).*
+
+<p align="center">
   <img src="results/figures/scaling.svg" width="49%" alt="Training throughput against number of GPUs, with linear scaling for reference">
 </p>
 
-*Left: validation error on the 10 % subset used for early stopping. Our model
-passes the authors' EnvTok model on the same frames at epoch 346 (forces) and
-496 (energies). Right: throughput from 1 to 8 GPUs, each a separate allocation
-(7 nodes at 8 GPUs); the efficiency relative to linear scaling is printed at
-each point.*
+*Throughput from 1 to 8 GPUs, each a separate allocation (7 nodes at 8 GPUs);
+the efficiency relative to linear scaling is printed at each point.*
 
 On one A100 with the same cuEquivariance kernels, a training step of this
 implementation reaches 94 % of the throughput of mace-torch: 1,389 against

@@ -309,84 +309,129 @@ def gap_id_ood(results: Path, out: Path) -> None:
         save(fig, out, "gap_id_ood")
 
 
+def _log_ticks(ax, values) -> None:
+    """1-2-3-5 ticks spanning ``values`` on a log axis, labelled as plain numbers."""
+    lo, hi = np.nanmin(values), np.nanmax(values)
+    decades = range(int(np.floor(np.log10(lo))), int(np.ceil(np.log10(hi))) + 1)
+    ticks = [m * 10.0**d for d in decades for m in (1, 2, 3, 5) if lo / 1.15 <= m * 10.0**d <= hi * 1.15]
+    ax.set_ylim(lo / 1.15, hi * 1.15)
+    ax.set_yticks(ticks, [f"{t:g}" for t in ticks])
+    ax.minorticks_off()
+
+
+# how each data set is drawn in the learning curves; every line is this work's model
+LEARNING_SETS = {
+    "train": {"label": "Training set", "ls": (0, (4, 2)), "marker": "v"},
+    "val": {"label": "Validation set (selects the best epoch)", "ls": "-", "marker": None},
+    "test": {"label": "Held-out test set", "ls": (0, (1.2, 1.6)), "marker": "o"},
+}
+
+
 @figure
 def training(results: Path, out: Path) -> None:
-    """Did training converge, and where did it stop?"""
-    import matplotlib.pyplot as plt
+    """Did training converge, did it overfit, and where did it stop?
 
-    rows = read_csv(results / "runs/envtok_8gpu/epochs.csv")
+    Validation is scored after every epoch. The training loss is the mean of the step
+    losses logged during an epoch (``train_loss.csv``), and the training- and test-set
+    errors come from the checkpoints archived every 25 epochs (``checkpoints.csv``);
+    each is drawn when its table is in ``results/``.
+    """
+    import matplotlib.pyplot as plt
+    from matplotlib.lines import Line2D
+
+    run = results / "runs/envtok_8gpu"
+    rows = [r for r in read_csv(run / "epochs.csv") if int(r["epoch"]) >= 0]
     ep = np.array([int(r["epoch"]) for r in rows])
-    keep = ep >= 0
-    ep = ep[keep]
-    f = np.array([float(r["force_mae_meV_per_A"]) for r in rows])[keep]
-    e = np.array([float(r["energy_mae_meV_per_atom"]) for r in rows])[keep]
-    lr = np.array([float(r["lr"]) for r in rows])[keep]
-    loss = np.array([float(r["loss"]) for r in rows])[keep]
-    best = int(ep[np.argmin(loss)])
+    col = {k: np.array([float(r[k]) for r in rows]) for k in rows[0] if k != "epoch"}
+    best = int(ep[np.argmin(col["loss"])])
     ref = read_json(results / "eval/val10_authors_envtok.json")["results"]["authors_envtok"]
+    train_loss = read_csv(run / "train_loss.csv") if (run / "train_loss.csv").exists() else []
+    ckpt = read_csv(run / "checkpoints.csv") if (run / "checkpoints.csv").exists() else []
+    navy = color("ours")
+
+    def curve(ax, x, y, which, every_epoch=False):
+        """Markers only on the archived checkpoints; a value every epoch is a plain line."""
+        s = LEARNING_SETS[which]
+        marker = None if every_epoch else s["marker"]
+        ax.plot(x, y, color=navy, lw=1.0, ls=s["ls"], marker=marker, ms=3, zorder=2)
+
     with style():
-        fig, axes = plt.subplots(
-            3,
-            1,
-            figsize=(SINGLE_COLUMN_IN, 3.9),
-            sharex=True,
-            gridspec_kw={"height_ratios": [1.15, 1.15, 0.7]},
+        fig, axes = plt.subplots(2, 3, figsize=(DOUBLE_COLUMN_IN, 4.4), sharex=True)
+        panels = (
+            (axes[0, 0], "loss", "Loss (weighted Huber)", None),
+            (axes[0, 1], "force_mae_meV_per_A", "Force MAE (meV Å$^{-1}$)", "force_mae_meV_per_A"),
+            (
+                axes[0, 2],
+                "energy_mae_meV_per_atom",
+                "Energy MAE (meV atom$^{-1}$)",
+                "energy_mae_meV_per_atom",
+            ),
+            (axes[1, 0], "stress_mae_meV_per_A3", "Stress MAE (meV Å$^{-3}$)", "stress_mae_meV_per_A3"),
         )
-        ticks = ([100, 150, 200, 300], [25, 50, 100, 200])
-        limits = ((92, 380), (19, 230))
-        for ax, y, auth, lab, tk in (
-            (axes[0], f, ref["force_mae_meV_per_A"], "Force MAE (meV Å$^{-1}$)", ticks[0]),
-            (axes[1], e, ref["energy_mae_meV_per_atom"], "Energy MAE (meV atom$^{-1}$)", ticks[1]),
-        ):
-            ax.plot(ep, y, color=color("ours"), lw=1.0, zorder=2)
-            ax.axhline(auth, color=color("authors_envtok"), lw=0.9, zorder=1)
-            ax.set_yscale("log")
-            ax.set_ylim(*limits[0 if ax is axes[0] else 1])
-            ax.set_yticks(tk, [str(v) for v in tk])
-            ax.minorticks_off()
-            ax.set_ylabel(lab)
+        for ax, key, label, ref_key in panels:
+            shown = [col[key]]
+            curve(ax, ep, col[key], "val", every_epoch=True)
+            if key == "loss" and train_loss:
+                y = np.array([float(r["loss_mean"]) for r in train_loss])
+                curve(ax, [int(r["epoch"]) for r in train_loss], y, "train", every_epoch=True)
+                shown.append(y)
+            for which in ("train", "test"):
+                pts = [r for r in ckpt if r["set"] == which]
+                if pts and key != "loss":
+                    y = np.array([float(r[key]) for r in pts])
+                    curve(ax, [int(r["epoch"]) for r in pts], y, which)
+                    shown.append(y)
+            if ref_key:
+                ax.axhline(ref[ref_key], color=color("authors_envtok"), lw=0.9, zorder=1)
+                shown.append([ref[ref_key]])
             ax.axvline(best, color=INK["grid"], lw=0.8, zorder=0)
-            # below the reference line on the left, where our curve is still far above it;
-            # the other annotation ends left of the best-epoch line
-            ax.text(
-                15,
-                auth / 1.035,
-                "authors' EnvTok model, same frames",
-                fontsize=5.5,
-                color=INK["ink2"],
-                ha="left",
-                va="top",
+            ax.set_yscale("log")
+            _log_ticks(ax, np.concatenate([np.ravel(v) for v in shown]))
+            ax.set_ylabel(label)
+        lr_ax = axes[1, 1]
+        lr_ax.step(ep, col["lr"], where="post", color=navy, lw=1.0)
+        lr_ax.axvline(best, color=INK["grid"], lw=0.8, zorder=0)
+        lr_ax.set_yscale("log")
+        lr_ax.set_ylabel("Learning rate")
+        axes[0, 2].tick_params(labelbottom=True)  # nothing below it to carry the epoch axis
+        for ax in (axes[1, 0], axes[1, 1], axes[0, 2]):
+            ax.set_xlabel("Epoch")
+        axes[0, 0].set_xlim(-10, ep.max() + 10)
+        for i, ax in enumerate(list(axes[0]) + list(axes[1, :2])):
+            letter(ax, "abcde"[i], x=-0.25)
+
+        # the last cell holds the key and the numbers at the best epoch
+        key_ax = axes[1, 2]
+        key_ax.axis("off")
+        drawn = ["val"] + (["train"] if train_loss or ckpt else []) + (["test"] if ckpt else [])
+        handles = [
+            Line2D([], [], color=navy, lw=1.0, ls=s["ls"], marker=s["marker"], ms=3, label=s["label"])
+            for k, s in LEARNING_SETS.items()
+            if k in drawn
+        ]
+        handles.append(
+            Line2D(
+                [], [], color=color("authors_envtok"), lw=0.9, label="Authors' EnvTok model, validation set"
             )
-            ax.text(
-                best - 15,
-                0.93,
-                f"this work: {y[ep == best][0]:.1f} at the best epoch",
-                transform=ax.get_xaxis_transform(),
-                fontsize=5.5,
-                color=INK["ink2"],
-                ha="right",
-                va="top",
-            )
-        axes[2].step(ep, lr, where="post", color=color("ours"), lw=1.0)
-        axes[2].set_yscale("log")
-        axes[2].set_ylabel("Learning rate")
-        axes[2].axvline(best, color=INK["grid"], lw=0.8, zorder=0)
-        axes[2].text(
-            best - 15,
-            1.15e-4,
-            f"best epoch {best}, early stop {ep.max()}",
-            fontsize=5.5,
-            color=INK["ink2"],
-            ha="right",
-            va="center",
         )
-        axes[2].set_xlabel("Epoch (777 optimiser steps of 1,024 structures each)")
-        axes[2].set_xlim(-10, ep.max() + 10)
-        for i, ax in enumerate(axes):
-            letter(ax, "abc"[i], x=-0.2)
-        axes[0].set_title("Validation: 65,775 OMat24 frames (10 % subset)", loc="left", pad=10)
-        fig.align_ylabels(axes)
-        fig.subplots_adjust(left=0.2, right=0.97, top=0.92, bottom=0.11, hspace=0.18)
+        handles.append(
+            Line2D([], [], color=INK["grid"], lw=0.8, label=f"Best epoch {best} (early stop {ep.max()})")
+        )
+        key_ax.legend(handles=handles, loc="upper left", fontsize=6, handlelength=2.6, borderaxespad=0)
+        at_best = col["force_mae_meV_per_A"][ep == best][0], col["energy_mae_meV_per_atom"][ep == best][0]
+        key_ax.text(
+            0.0,
+            0.52,
+            f"Validation at the best epoch:\nforce {at_best[0]:.1f} meV Å$^{{-1}}$\n"
+            f"energy {at_best[1]:.1f} meV atom$^{{-1}}$\n"
+            "One epoch: 777 optimiser steps\nof 1,024 structures",
+            transform=key_ax.transAxes,
+            fontsize=6,
+            va="top",
+            ha="left",
+            color=INK["ink2"],
+        )
+        fig.subplots_adjust(left=0.08, right=0.99, top=0.95, bottom=0.1, hspace=0.3, wspace=0.42)
         save(fig, out, "training")
 
 
