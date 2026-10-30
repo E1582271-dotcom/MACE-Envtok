@@ -14,8 +14,9 @@ import torch
 
 from .frames import Frames
 
-# ASE Voigt order xx, yy, zz, yz, xz, xy -> full 3x3 matrix
+# ASE Voigt order xx, yy, zz, yz, xz, xy -> full 3x3 matrix, and back
 _VOIGT_TO_FULL = np.array([[0, 5, 4], [5, 1, 3], [4, 3, 2]])
+_FULL_TO_VOIGT = ((0, 1, 2, 1, 0, 0), (0, 1, 2, 2, 2, 1))
 
 
 @dataclass
@@ -50,6 +51,11 @@ class Batch:
 
 def voigt_to_full(stress: np.ndarray) -> np.ndarray:
     return stress[..., _VOIGT_TO_FULL]
+
+
+def full_to_voigt(stress):
+    """[..., 3, 3] -> [..., 6] in ASE Voigt order; numpy arrays or torch tensors."""
+    return stress[..., _FULL_TO_VOIGT[0], _FULL_TO_VOIGT[1]]
 
 
 def collate(frames: Frames, indices) -> Batch:

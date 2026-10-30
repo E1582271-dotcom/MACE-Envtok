@@ -51,6 +51,7 @@ enough to attribute them.
 
 - [Training](#training)
 - [Results](#results)
+  - [Accuracy against DFT](#accuracy-against-dft)
   - [OMat24 validation](#omat24-validation-in-distribution)
   - [MatPES](#matpes-dataset-shift-and-out-of-distribution)
   - [MatCalc-Bench](#matcalc-bench-materials-properties)
@@ -79,15 +80,33 @@ with PBS's task manager. NCCL runs over TCP on the Slingshot interfaces
 ([docs/NSCC.md](docs/NSCC.md)).
 
 <p align="center">
-  <img src="results/figures/training.svg" width="49%" alt="Validation force and energy MAE and learning rate against epoch">
+  <img src="results/figures/training.svg" width="100%" alt="Validation loss, force, energy and stress MAE, and learning rate against epoch">
+</p>
+
+*Learning curves. The validation set is the 10 % OMat24 validation subset used
+for early stopping; it is scored every epoch. The training loss is the mean of
+the logged optimiser steps, smoothed over 9 epochs. Training- and test-set
+errors come from the checkpoints archived every 25 epochs, each scored on
+65,775 frames: a fixed random sample of the training set, and of the 90 %
+held-out set. Re-scored on the validation set, those checkpoints reproduce the
+logged validation metrics to 1e-8.*
+
+*Validation and test agree throughout (108.9 against 110.8 meV Å⁻¹ at the last
+archive), so selecting the epoch on validation did not overfit to it. The
+training set is not drawn like the other two. The EnvTok selection holds
+smaller cells (8.3 atoms against 18.3) with larger forces (11 % of atoms above
+5 eV Å⁻¹, against 7.5 %). Its per-atom energy and stress errors are therefore
+higher than validation even though the model was fitted to it. Only its force
+error and loss are lower, and the gap in the loss widens after the learning
+rate starts to drop. Our model passes the authors' EnvTok model on the
+validation frames at epoch 346 (forces) and 496 (energies).*
+
+<p align="center">
   <img src="results/figures/scaling.svg" width="49%" alt="Training throughput against number of GPUs, with linear scaling for reference">
 </p>
 
-*Left: validation error on the 10 % subset used for early stopping. Our model
-passes the authors' EnvTok model on the same frames at epoch 346 (forces) and
-496 (energies). Right: throughput from 1 to 8 GPUs, each a separate allocation
-(7 nodes at 8 GPUs); the efficiency relative to linear scaling is printed at
-each point.*
+*Throughput from 1 to 8 GPUs, each a separate allocation (7 nodes at 8 GPUs);
+the efficiency relative to linear scaling is printed at each point.*
 
 On one A100 with the same cuEquivariance kernels, a training step of this
 implementation reaches 94 % of the throughput of mace-torch: 1,389 against
@@ -99,6 +118,55 @@ implementation reaches 94 % of the throughput of mace-torch: 1,389 against
 The comparison models are the authors' released ones, scored by the same code
 as ours. Every number here comes from a file in [results/](results), and
 `envtok-mace figures` redraws every figure from those files.
+
+### Accuracy against DFT
+
+Every structure's predicted energy, forces and stress were saved next to its DFT
+values, for three models on the 591,981 held-out OMat24 frames and on MatPES, then
+reduced to the tables in [results/accuracy/](results/accuracy). Their totals
+reproduce the tables below to better than 1e-7 on OMat24 and 2e-5 on MatPES.
+
+<p align="center">
+  <img src="results/figures/parity.svg" width="100%" alt="Predicted against DFT energy, force and stress on held-out OMat24, for three models">
+</p>
+
+*Predicted against DFT on held-out OMat24, coloured by the share of points in each
+bin. The force axes are compressed around zero, because forces span five decades.
+Stress here is the mean over the six independent components, which is why it is
+higher than the nine-component mean in the table below.*
+The same figure is available for
+[MatPES bulk](results/figures/parity_matpes_bulk.svg) and
+[MatPES non-bulk](results/figures/parity_matpes_non_bulk.svg).
+
+<p align="center">
+  <img src="results/figures/element_errors.svg" width="100%" alt="Force MAE per element on a periodic table, and its ratio to the authors' EnvTok model">
+</p>
+
+*Force MAE per element on held-out OMat24. It is highest for C (281 meV/Å), N (254)
+and Re (232), and lowest for Na (29), K (37) and Li (39). In all 63 elements with at
+least 1,000 atoms, this work is at 0.95–0.99 times the authors' EnvTok model. Ar, Kr
+and Xe have only 6, 66 and 40 atoms in this set, so they get no number.*
+
+<p align="center">
+  <img src="results/figures/error_by_source.svg" width="100%" alt="Force and energy MAE per OMat24 sub-dataset, and each sub-dataset's share of the training and held-out atoms">
+</p>
+
+*Errors per OMat24 sub-dataset. Force error is lowest on 1,000 K AIMD (79–80 meV/Å)
+and highest on the rattled sets (113–141). Energy error stands out only on
+`rattled-relax`: 45.9 meV/atom against 18.5–25.4 elsewhere. The 3,000 K AIMD frames
+hold 52% of the held-out atoms and 2.4% of the training atoms, yet their force error
+(104–106 meV/Å) is below that of every rattled set. With one training run, this
+figure does not show why.*
+
+<p align="center">
+  <img src="results/figures/error_vs_force.svg" width="100%" alt="Median force error against the size of the DFT force, on held-out OMat24, MatPES bulk and MatPES non-bulk">
+</p>
+
+*Median force error against the size of the DFT force. Around 1 eV/Å the median
+relative error is 12% on held-out OMat24, 27% on MatPES bulk and 37% on non-bulk.
+Below about 0.03 eV/Å on OMat24 and 0.18 eV/Å on MatPES, the error is as large as the
+force itself. Atoms below 0.01 eV/Å are not drawn: 61% of the 228,101 such MatPES
+atoms have a DFT force below 1e-6 eV/Å, where the error says little about accuracy.*
 
 ### OMat24 validation (in distribution)
 

@@ -18,6 +18,8 @@ COMMANDS = {
     "diatomics": ("envtok_mace.bench.diatomics", "MLIP-Arena homonuclear diatomic curves, all elements"),
     "latent": ("envtok_mace.analysis.latent", "latent-space distance from the training data vs force error"),
     "id-ood": ("envtok_mace.analysis.id_ood", "one table of all benchmarks grouped ID / shift / OOD"),
+    "learning-curves": ("envtok_mace.analysis.learning", "train vs val loss, and errors per epoch"),
+    "accuracy": ("envtok_mace.analysis.accuracy", "parity histograms and error breakdowns from predictions"),
     "figures": ("envtok_mace.plots.figures", "draw every figure from results/ (SVG, PDF, PNG)"),
     "ref-eval": ("envtok_mace.eval.reference", "evaluate a reference mace-torch model on a Frames file"),
     "train": ("envtok_mace.train.run", "train a model (one process per GPU)"),

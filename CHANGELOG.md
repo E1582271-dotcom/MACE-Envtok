@@ -8,6 +8,25 @@ All notable changes to this project are recorded here. The format follows
 
 ### Added
 
+- **Per-structure predictions.** `eval --save-predictions DIR` and
+  `matpes --save-predictions` write every structure's predicted and DFT energy,
+  forces and stress to an HDF5 file per model (`eval/predictions.py`). The
+  reported metrics do not change.
+- **`envtok-mace accuracy`** reduces those files to small tables for
+  `results/accuracy/`: parity histograms, error quantiles, and errors per
+  element, per OMat24 sub-dataset and against the DFT force magnitude.
+  `scripts/nscc/accuracy.pbs` runs the whole chain on the cluster.
+- **Accuracy against DFT.** Tables and six figures for the held-out OMat24 frames
+  and MatPES, for this work, the authors' EnvTok model and MACE-OMAT-0: parity
+  plots of energy, forces and stress, force error per element on a periodic table,
+  errors per OMat24 sub-dataset next to its share of the training set, and force
+  error against the size of the force. The totals reproduce the published tables
+  to better than 1e-7 on OMat24 and 2e-5 on MatPES; no earlier number changes.
+- `envtok-mace learning-curves` reduces the trainer's step log to a per-epoch
+  training loss. It also collects the evaluations of the checkpoints archived
+  every 25 epochs on fixed training and held-out subsets, so the training figure
+  can show train against validation loss, and train/validation/test errors
+  against epoch.
 - **Diatomic curves** (`envtok-mace diatomics`, `results/diatomics/`, figure
   `diatomics`). MLIP Arena's homonuclear task covers all 68 elements, for this
   work, the authors' EnvTok model and MACE-OMAT-0. Curves are referenced to two
@@ -17,6 +36,13 @@ All notable changes to this project are recorded here. The format follows
   locality beyond the cutoff, and smoothness as a pair crosses the cutoff.
 
 ### Changed
+
+- The training figure has five panels: loss, force, energy and stress MAE, and
+  the learning rate. Each panel shows the training, validation and held-out
+  test sets: the training loss comes from the step log, and the training- and
+  test-set errors from the 27 archived checkpoints
+  (`results/runs/envtok_8gpu/train_loss.csv`, `checkpoints.csv`). The
+  validation loss and stress MAE were logged before but not drawn.
 
 - The README and the test skip message say how to enable the ten tests that are
   skipped by default: the authors' models from Zenodo and the `bench` extra.
