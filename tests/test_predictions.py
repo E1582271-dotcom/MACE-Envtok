@@ -209,3 +209,19 @@ def test_matpes_domains_follow_the_paper_labels(val40, tmp_path):
     assert d["overcompressed"].tolist() == [i == 1 for i in range(len(sid))]
     assert np.array_equal(d["non_bulk"], (dim < 3) & ~d["overcompressed"])
     assert np.array_equal(d["bulk"], (dim == 3) & ~d["overcompressed"])
+
+
+def test_composition_counts_the_structures_and_atoms_of_each_source(val40):
+    rows = accuracy.composition(FIXTURE)
+    assert sum(r["n_structures"] for r in rows) == len(val40)
+    assert sum(r["n_atoms"] for r in rows) == int(val40.natoms.sum())
+    for r in rows:
+        m = val40.source == r["source"]
+        assert (r["n_structures"], r["n_atoms"]) == (int(m.sum()), int(val40.natoms[m].sum()))
+
+
+def test_the_summary_names_the_model_file_without_its_directory(val40, tmp_path):
+    run = _synthetic(val40, 0.01, 0.02, 0.003)
+    run["attrs"] = {"model": "/some/private/path/best.pt", "model_sha256": "abc"}
+    summary = accuracy.reduce({"ours": run}, accuracy.domains(run["sid"], None))["summary"]
+    assert summary["models"]["ours"]["model"] == "best.pt"

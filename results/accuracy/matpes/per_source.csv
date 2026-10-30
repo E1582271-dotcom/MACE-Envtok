@@ -1,0 +1,13 @@
+model,domain,source,n_structures,n_atoms,energy_mae_meV_per_atom,force_mae_meV_per_A,stress_mae_voigt6_meV_per_A3
+ours,all,matpes-pbe-2025.2,323096,3011678,141.307,191.992,7.70767
+ours,bulk,matpes-pbe-2025.2,242319,2234968,128.49,143.306,7.19674
+ours,non_bulk,matpes-pbe-2025.2,80766,775930,179.599,320.747,9.22519
+ours,overcompressed,matpes-pbe-2025.2,11,780,1327.78,11610.9,120.769
+authors_envtok,all,matpes-pbe-2025.2,323096,3011678,184.434,1119.17,11.1194
+authors_envtok,bulk,matpes-pbe-2025.2,242319,2234968,130.251,148.596,7.43654
+authors_envtok,non_bulk,matpes-pbe-2025.2,80766,775930,346.831,3904.33,22.1468
+authors_envtok,overcompressed,matpes-pbe-2025.2,11,780,1418.76,11510.6,172.533
+mace_omat0,all,matpes-pbe-2025.2,323096,3011678,126.786,167.079,10.9462
+mace_omat0,bulk,matpes-pbe-2025.2,242319,2234968,118.048,126.401,6.90142
+mace_omat0,non_bulk,matpes-pbe-2025.2,80766,775930,152.83,275.376,23.0659
+mace_omat0,overcompressed,matpes-pbe-2025.2,11,780,1371.31,8992.12,126.275

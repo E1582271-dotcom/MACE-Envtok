@@ -12,7 +12,9 @@ frames. Output, in ``--out``, small enough for ``results/``:
 - ``per_element.csv``: force error of the atoms of each element, and energy error of
   the structures that contain it;
 - ``per_source.csv``: errors per OMat24 sub-dataset (the frames' ``source``);
-- ``force_magnitude.csv``: per-atom force error against the size of the DFT force.
+- ``force_magnitude.csv``: per-atom force error against the size of the DFT force;
+- ``training_sources.csv`` (with ``--training``): structures and atoms of each
+  sub-dataset in the training set, to set the per-source errors against.
 
 Domains are "all", plus MatPES bulk / non_bulk / overcompressed when ``--domains``
 points at the authors' per-structure file (labelled as in ``bench.matpes.paper_domains``).
@@ -217,6 +219,23 @@ def force_magnitude(err: dict, amask) -> list[dict]:
     return rows
 
 
+def composition(frames_path: str) -> list[dict]:
+    """Structures and atoms of each sub-dataset in a Frames file, read without loading the rest."""
+    import h5py
+
+    with h5py.File(frames_path, "r") as h:
+        source = h["source"].asstr()[()]
+        natoms = np.diff(h["atom_ptr"][()])
+    return [
+        {
+            "source": str(s),
+            "n_structures": int((source == s).sum()),
+            "n_atoms": int(natoms[source == s].sum()),
+        }
+        for s in np.unique(source)
+    ]
+
+
 def reduce(runs: dict[str, dict], doms: dict[str, np.ndarray]) -> dict:
     labels = list(runs)
     first = runs[labels[0]]
@@ -240,7 +259,7 @@ def reduce(runs: dict[str, dict], doms: dict[str, np.ndarray]) -> dict:
     for label in labels:
         run, err = runs[label], errs[label]
         out["summary"]["models"][label] = {
-            "model": str(run["attrs"].get("model", "")),
+            "model": Path(str(run["attrs"].get("model", ""))).name,  # no local paths in results/
             "model_sha256": str(run["attrs"].get("model_sha256", "")),
             "dtype": str(run["attrs"].get("dtype", "")),
             "n_nonfinite": int((~oks[label]).sum()),
@@ -286,6 +305,12 @@ def add_arguments(p: argparse.ArgumentParser) -> None:
         metavar="PER_STRUCTURE_NPZ",
         help="MatPES: the authors' per_structure.npz, for the bulk / non-bulk split",
     )
+    p.add_argument(
+        "--training",
+        default=None,
+        metavar="FRAMES",
+        help="the training Frames file: also write its structures and atoms per sub-dataset",
+    )
     p.add_argument("--out", required=True, help="e.g. results/accuracy/omat24_val90")
 
 
@@ -293,3 +318,5 @@ def run(args: argparse.Namespace) -> None:
     labels = args.labels or [Path(p).stem for p in args.predictions]
     runs = load_runs(args.predictions, labels)
     write(reduce(runs, domains(runs[labels[0]]["sid"], args.domains)), Path(args.out))
+    if args.training:
+        _write_csv(composition(args.training), Path(args.out) / "training_sources.csv")

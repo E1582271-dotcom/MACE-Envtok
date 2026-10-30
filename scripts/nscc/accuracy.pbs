@@ -18,6 +18,7 @@ cd "${PBS_O_WORKDIR:-$PWD}"
 : "${MODELS:?}" "${LABELS:?}" "${OUT:?}"
 
 VAL=${VAL:-$ENVTOK_DATA/omat24_val_90pct_heldout.h5}
+TRAIN=${TRAIN:-$ENVTOK_DATA/envtok_train.h5}
 MATPES=${MATPES:-$ENVTOK_DATA/matpes_test.h5}
 # the authors' per-structure file supplies the MatPES bulk / non-bulk labels
 DOMAINS=${DOMAINS:-$ENVTOK_SCRATCH/zenodo/benchmarks_matpes/benchmarks/matpes/EnvTok/per_structure.npz}
@@ -41,6 +42,7 @@ for L in "${labels[@]}"; do
     val_files+=("$OUT/omat24_val90/$L.h5")
     matpes_files+=("$OUT/matpes/$L/predictions.h5")
 done
-envtok-mace accuracy --predictions "${val_files[@]}" --labels "${labels[@]}" --out "$OUT/tables/omat24_val90"
+envtok-mace accuracy --predictions "${val_files[@]}" --labels "${labels[@]}" --training "$TRAIN" \
+    --out "$OUT/tables/omat24_val90"
 envtok-mace accuracy --predictions "${matpes_files[@]}" --labels "${labels[@]}" --domains "$DOMAINS" \
     --out "$OUT/tables/matpes"

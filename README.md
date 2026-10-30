@@ -51,6 +51,7 @@ enough to attribute them.
 
 - [Training](#training)
 - [Results](#results)
+  - [Accuracy against DFT](#accuracy-against-dft)
   - [OMat24 validation](#omat24-validation-in-distribution)
   - [MatPES](#matpes-dataset-shift-and-out-of-distribution)
   - [MatCalc-Bench](#matcalc-bench-materials-properties)
@@ -117,6 +118,55 @@ implementation reaches 94 % of the throughput of mace-torch: 1,389 against
 The comparison models are the authors' released ones, scored by the same code
 as ours. Every number here comes from a file in [results/](results), and
 `envtok-mace figures` redraws every figure from those files.
+
+### Accuracy against DFT
+
+Every structure's predicted energy, forces and stress were saved next to its DFT
+values, for three models on the 591,981 held-out OMat24 frames and on MatPES, then
+reduced to the tables in [results/accuracy/](results/accuracy). Their totals
+reproduce the tables below to better than 1e-7 on OMat24 and 2e-5 on MatPES.
+
+<p align="center">
+  <img src="results/figures/parity.svg" width="100%" alt="Predicted against DFT energy, force and stress on held-out OMat24, for three models">
+</p>
+
+*Predicted against DFT on held-out OMat24, coloured by the share of points in each
+bin. The force axes are compressed around zero, because forces span five decades.
+Stress here is the mean over the six independent components, which is why it is
+higher than the nine-component mean in the table below.*
+The same figure is available for
+[MatPES bulk](results/figures/parity_matpes_bulk.svg) and
+[MatPES non-bulk](results/figures/parity_matpes_non_bulk.svg).
+
+<p align="center">
+  <img src="results/figures/element_errors.svg" width="100%" alt="Force MAE per element on a periodic table, and its ratio to the authors' EnvTok model">
+</p>
+
+*Force MAE per element on held-out OMat24. It is highest for C (281 meV/Å), N (254)
+and Re (232), and lowest for Na (29), K (37) and Li (39). In all 63 elements with at
+least 1,000 atoms, this work is at 0.95–0.99 times the authors' EnvTok model. Ar, Kr
+and Xe have only 6, 66 and 40 atoms in this set, so they get no number.*
+
+<p align="center">
+  <img src="results/figures/error_by_source.svg" width="100%" alt="Force and energy MAE per OMat24 sub-dataset, and each sub-dataset's share of the training and held-out atoms">
+</p>
+
+*Errors per OMat24 sub-dataset. Force error is lowest on 1,000 K AIMD (79–80 meV/Å)
+and highest on the rattled sets (113–141). Energy error stands out only on
+`rattled-relax`: 45.9 meV/atom against 18.5–25.4 elsewhere. The 3,000 K AIMD frames
+hold 52% of the held-out atoms and 2.4% of the training atoms, yet their force error
+(104–106 meV/Å) is below that of every rattled set. With one training run, this
+figure does not show why.*
+
+<p align="center">
+  <img src="results/figures/error_vs_force.svg" width="100%" alt="Median force error against the size of the DFT force, on held-out OMat24, MatPES bulk and MatPES non-bulk">
+</p>
+
+*Median force error against the size of the DFT force. Around 1 eV/Å the median
+relative error is 12% on held-out OMat24, 27% on MatPES bulk and 37% on non-bulk.
+Below about 0.03 eV/Å on OMat24 and 0.18 eV/Å on MatPES, the error is as large as the
+force itself. Atoms below 0.01 eV/Å are not drawn: 61% of the 228,101 such MatPES
+atoms have a DFT force below 1e-6 eV/Å, where the error says little about accuracy.*
 
 ### OMat24 validation (in distribution)
 
