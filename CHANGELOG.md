@@ -8,6 +8,14 @@ All notable changes to this project are recorded here. The format follows
 
 ### Added
 
+- **Per-structure predictions.** `eval --save-predictions DIR` and
+  `matpes --save-predictions` write every structure's predicted and DFT energy,
+  forces and stress to an HDF5 file per model (`eval/predictions.py`). The
+  reported metrics do not change.
+- **`envtok-mace accuracy`** reduces those files to small tables for
+  `results/accuracy/`: parity histograms, error quantiles, and errors per
+  element, per OMat24 sub-dataset and against the DFT force magnitude.
+  `scripts/nscc/accuracy.pbs` runs the whole chain on the cluster.
 - `envtok-mace learning-curves` reduces the trainer's step log to a per-epoch
   training loss. It also collects the evaluations of the checkpoints archived
   every 25 epochs on fixed training and held-out subsets, so the training figure

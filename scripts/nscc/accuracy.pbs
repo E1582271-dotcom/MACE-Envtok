@@ -1,0 +1,46 @@
+#!/bin/bash
+# Every structure's predictions next to its DFT labels, for the parity plots and error
+# breakdowns, on one GPU node:
+#   1. the OMat24 held-out set (591,981 frames) for all models in one eval run,
+#   2. the MatPES test set (323,096 structures), one model at a time,
+#   3. the small tables for results/accuracy (envtok-mace accuracy).
+# The prediction files (a few hundred MB per model and set) stay in $OUT.
+#   qsub -P <project> -v MODELS="best.pt a.model b.model",LABELS="ours authors_envtok mace_omat0",OUT=... \
+#       scripts/nscc/accuracy.pbs
+#PBS -N envtok-accuracy
+#PBS -q normal
+#PBS -l select=1:ncpus=16:ngpus=1:mem=110gb
+#PBS -l walltime=06:00:01
+#PBS -j oe
+set -euo pipefail
+cd "${PBS_O_WORKDIR:-$PWD}"
+. scripts/nscc/env.sh
+: "${MODELS:?}" "${LABELS:?}" "${OUT:?}"
+
+VAL=${VAL:-$ENVTOK_DATA/omat24_val_90pct_heldout.h5}
+MATPES=${MATPES:-$ENVTOK_DATA/matpes_test.h5}
+# the authors' per-structure file supplies the MatPES bulk / non-bulk labels
+DOMAINS=${DOMAINS:-$ENVTOK_SCRATCH/zenodo/benchmarks_matpes/benchmarks/matpes/EnvTok/per_structure.npz}
+read -r -a models <<< "$MODELS"
+read -r -a labels <<< "$LABELS"
+
+if [ -z "${SKIP_VAL:-}" ]; then
+    envtok-mace eval --models "${models[@]}" --labels "${labels[@]}" --frames "$VAL" \
+        --dtype "${DTYPE:-float32}" ${BACKEND:+--backend $BACKEND} \
+        --out "$OUT/omat24_val90/eval.json" --save-predictions "$OUT/omat24_val90"
+fi
+if [ -z "${SKIP_MATPES:-}" ]; then
+    for i in "${!models[@]}"; do
+        envtok-mace matpes --frames "$MATPES" --model "${models[$i]}" --out "$OUT/matpes/${labels[$i]}" \
+            --dtype "${DTYPE:-float32}" ${BACKEND:+--backend $BACKEND} --save-predictions
+    done
+fi
+
+val_files=() matpes_files=()
+for L in "${labels[@]}"; do
+    val_files+=("$OUT/omat24_val90/$L.h5")
+    matpes_files+=("$OUT/matpes/$L/predictions.h5")
+done
+envtok-mace accuracy --predictions "${val_files[@]}" --labels "${labels[@]}" --out "$OUT/tables/omat24_val90"
+envtok-mace accuracy --predictions "${matpes_files[@]}" --labels "${labels[@]}" --domains "$DOMAINS" \
+    --out "$OUT/tables/matpes"
