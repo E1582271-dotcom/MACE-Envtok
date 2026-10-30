@@ -24,10 +24,12 @@ which is purged after 30 days without access.
 ## 1. Python environment (login node)
 
 ```bash
-TORCH_CUDA=cu124 bash scripts/nscc/setup_env.sh
+TORCH_CUDA=cu126 bash scripts/nscc/setup_env.sh
 ```
 
-If the probe in step 2 shows a driver older than CUDA 12.4, rebuild with `TORCH_CUDA=cu121` or `cu118`.
+`cu126` is the default and `cu128` the alternative. The cuEquivariance kernels need
+CUDA 12.5 or newer, so check the driver version the probe in step 2 reports and pick
+the newest build it supports.
 
 ## 2. Probe the cluster (15 min, 1 GPU)
 
