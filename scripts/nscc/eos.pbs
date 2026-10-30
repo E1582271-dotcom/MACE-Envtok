@@ -1,0 +1,26 @@
+#!/bin/bash
+# MLIP-Arena equation of state on one CPU node: the cells are small (median 6 atoms), so a
+# GPU would not help. The backend is e3nn because the cueq ops stop on a node without a GPU.
+# Finished structures are skipped when the job is run again.
+# Stage the WBM set on the login node first:
+#   python -c "from huggingface_hub import hf_hub_download as h; h('atomind/mlip-arena', \
+#     'wbm_subset.db', repo_type='dataset')"
+#   qsub -P <project> -v MODELS="best.pt a.model b.model",LABELS="ours authors_envtok mace_omat0" \
+#       scripts/nscc/eos.pbs
+#PBS -N envtok-eos
+#PBS -q normal
+#PBS -l select=1:ncpus=64:mem=220gb
+#PBS -l walltime=03:00:00
+#PBS -j oe
+set -euo pipefail
+cd "${PBS_O_WORKDIR:-$PWD}"
+. scripts/nscc/env.sh
+: "${MODELS:?}" "${LABELS:?}"
+OUT=${OUT:-$ENVTOK_SCRATCH/eos_runs}
+export OMP_NUM_THREADS=1
+read -r -a models <<< "$MODELS"
+read -r -a labels <<< "$LABELS"
+
+envtok-mace eos --models "${models[@]}" --labels "${labels[@]}" --out "$OUT" \
+    --workers "${WORKERS:-64}" --threads 1 --backend "${BACKEND:-e3nn}" ${EXTRA_ARGS:-}
+envtok-mace eos --summary --labels "${labels[@]}" --out "$OUT" --tables "$OUT/tables"

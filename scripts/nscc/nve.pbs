@@ -1,0 +1,23 @@
+#!/bin/bash
+# Total-energy drift in NVE MD on one GPU, shared by several workers: each model, in float32
+# and float64, at each temperature. Finished runs are skipped when the job is run again.
+# Stage the WBM set on the login node first (see eos.pbs).
+#   qsub -P <project> -v MODELS="best.pt a.model b.model",LABELS="ours authors_envtok mace_omat0" \
+#       scripts/nscc/nve.pbs
+#PBS -N envtok-nve
+#PBS -q normal
+#PBS -l select=1:ncpus=16:ngpus=1:mem=110gb
+#PBS -l walltime=08:00:00
+#PBS -j oe
+set -euo pipefail
+cd "${PBS_O_WORKDIR:-$PWD}"
+. scripts/nscc/env.sh
+: "${MODELS:?}" "${LABELS:?}"
+OUT=${OUT:-$ENVTOK_SCRATCH/nve_runs}
+export OMP_NUM_THREADS=2
+read -r -a models <<< "$MODELS"
+read -r -a labels <<< "$LABELS"
+
+envtok-mace nve --models "${models[@]}" --labels "${labels[@]}" --out "$OUT" --device cuda \
+    --workers "${WORKERS:-4}" --threads 2 ${BACKEND:+--backend $BACKEND} ${EXTRA_ARGS:-}
+envtok-mace nve --summary --labels "${labels[@]}" --out "$OUT" --tables "$OUT/tables"

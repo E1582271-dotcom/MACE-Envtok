@@ -32,6 +32,13 @@ All notable changes to this project are recorded here. The format follows
   work, the authors' EnvTok model and MACE-OMAT-0. Curves are referenced to two
   isolated atoms. The arena's smoothness metrics are reported per element, with
   counts of single-well curves and of wells deeper than any homonuclear bond.
+- **Equation of state** (`envtok-mace eos`, `results/eos/`, figure `eos`). MLIP
+  Arena's EOS steps on its WBM set, for this work, the authors' EnvTok model and
+  MACE-OMAT-0: the 610 of 1,000 structures with every element in the model's table.
+  The arena's smoothness metrics are reported per structure. The Birch-Murnaghan
+  bulk modulus is compared with MACE-OMAT-0, because the set has no DFT moduli.
+- **`envtok-mace nve`** measures the total-energy drift of NVE molecular dynamics
+  on WBM supercells, in float32 and float64, at 300 and 1000 K.
 - **Physics tests:** extensivity under supercells, forces summing to zero,
   locality beyond the cutoff, and smoothness as a pair crosses the cutoff.
 

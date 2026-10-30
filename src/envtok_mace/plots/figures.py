@@ -1183,6 +1183,85 @@ def diatomics(results: Path, out: Path) -> None:
         save(fig, out, "diatomics")
 
 
+@figure
+def eos(results: Path, out: Path) -> None:
+    """Do energy-volume curves form one smooth well, and do the models agree on the bulk modulus?"""
+    import matplotlib.pyplot as plt
+    from matplotlib.lines import Line2D
+
+    summary = read_json(results / "eos/eos_summary.json")
+    rows = read_csv(results / "eos/eos_structures.csv")
+    moduli = {
+        label: {r["id"]: float(r["K_GPa"]) for r in rows if r["model"] == label and r["K_GPa"]}
+        for label in summary["labels"]
+    }
+    models = [m for m in MODELS if m in moduli]
+    ratios = summary["volume_ratios"]
+    with style():
+        fig, axes = plt.subplots(1, 3, figsize=(DOUBLE_COLUMN_IN, 2.95))
+        for ax in axes:
+            ax.set_box_aspect(1)
+        ax = axes[0]
+        for m in models:
+            band = summary["bands"][m]
+            ls = MODELS[m].get("linestyle", "-")
+            if m == "mace_omat0":  # a reference, so drawn as lines over the two bands
+                for key, lw in (("p10_meV", 0.6), ("p90_meV", 0.6)):
+                    ax.plot(ratios, band[key], color=line_color(m), lw=lw, ls=ls, zorder=4)
+            else:
+                ax.fill_between(ratios, band["p10_meV"], band["p90_meV"], color=color(m), alpha=0.2, lw=0)
+            ax.plot(ratios, band["p50_meV"], color=line_color(m), lw=1.0, ls=ls, zorder=4 if ls != "-" else 3)
+        ax.set_xlabel("V / V$_\\mathrm{relaxed}$")
+        ax.set_ylabel("E − E(V$_\\mathrm{relaxed}$) (meV/atom)")
+        ax.text(
+            0.5,
+            0.95,
+            "median, 10th–90th percentile\nthe three models overlap",
+            transform=ax.transAxes,
+            ha="center",
+            va="top",
+            fontsize=5.5,
+        )
+        letter(ax, "a")
+
+        low, high = 0.5, 600.0
+        reference_k = moduli["mace_omat0"]
+        names = {"ours": "this work", "authors_envtok": "authors' EnvTok"}
+        for ax, (m, name), tag in zip(axes[1:], names.items(), "bc"):
+            x, y = np.array([(reference_k[i], k) for i, k in moduli[m].items() if i in reference_k]).T
+            shown = (x > 0) & (y > 0)  # a fit can return a negative modulus, which a log axis cannot show
+            ax.plot([low, high], [low, high], color=INK["muted"], lw=0.6, zorder=1)
+            ax.plot(
+                x[shown], y[shown], MODELS[m]["marker"], color=color(m), ms=2.2, mew=0, alpha=0.65, zorder=2
+            )
+            ax.set_xscale("log")
+            ax.set_yscale("log")
+            ax.set_xlim(low, high)
+            ax.set_ylim(low, high)
+            ax.set_xlabel("K, MACE-OMAT-0 (GPa)")
+            ax.set_ylabel(f"K, {name} (GPa)")
+            agreement = summary["models"][m]["K_against_mace_omat0"]
+            note = f"n = {agreement['n']}\nmedian |ΔK| = {agreement['median_abs_GPa']:.1f} GPa"
+            if not shown.all():
+                note += f"\nK ≤ 0 not shown: {int((~shown).sum())}"
+            ax.text(0.05, 0.95, note, transform=ax.transAxes, va="top", fontsize=5.5)
+            letter(ax, tag)
+
+        handles = []
+        for m in models:
+            s = summary["models"][m]
+            label = (
+                f"{MODELS[m]['label']}: one well for {s['one_well']} of {s['n_structures']} structures; "
+                f"no fit for {s['n_without_fit']}"
+            )
+            handles.append(
+                Line2D([], [], color=line_color(m), lw=1.0, ls=MODELS[m].get("linestyle", "-"), label=label)
+            )
+        fig.legend(handles=handles, loc="upper left", bbox_to_anchor=(0.06, 1.0), fontsize=6, ncol=1)
+        fig.subplots_adjust(left=0.075, right=0.99, top=0.79, bottom=0.145, wspace=0.34)
+        save(fig, out, "eos")
+
+
 # ------------------------------------------------------------------------ CLI
 def add_arguments(p: argparse.ArgumentParser) -> None:
     p.add_argument("--results", default="results")
