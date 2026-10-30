@@ -37,8 +37,11 @@ All notable changes to this project are recorded here. The format follows
   MACE-OMAT-0: the 610 of 1,000 structures with every element in the model's table.
   The arena's smoothness metrics are reported per structure. The Birch-Murnaghan
   bulk modulus is compared with MACE-OMAT-0, because the set has no DFT moduli.
-- **`envtok-mace nve`** measures the total-energy drift of NVE molecular dynamics
-  on WBM supercells, in float32 and float64, at 300 and 1000 K.
+- **NVE drift** (`envtok-mace nve`, `results/nve/`, figure `nve_drift`). The
+  total-energy drift over 10 ps on 20 WBM supercells, in float32 and float64, for
+  the same three models. Runs start at a nominal 300 and 1000 K and are shown at
+  their measured temperature, because some structures heat up well above their
+  start in all three models.
 - **Physics tests:** extensivity under supercells, forces summing to zero,
   locality beyond the cutoff, and smoothness as a pair crosses the cutoff.
 
