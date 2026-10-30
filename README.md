@@ -79,15 +79,33 @@ with PBS's task manager. NCCL runs over TCP on the Slingshot interfaces
 ([docs/NSCC.md](docs/NSCC.md)).
 
 <p align="center">
-  <img src="results/figures/training.svg" width="49%" alt="Validation force and energy MAE and learning rate against epoch">
+  <img src="results/figures/training.svg" width="100%" alt="Validation loss, force, energy and stress MAE, and learning rate against epoch">
+</p>
+
+*Learning curves. The validation set is the 10 % OMat24 validation subset used
+for early stopping; it is scored every epoch. The training loss is the mean of
+the logged optimiser steps, smoothed over 9 epochs. Training- and test-set
+errors come from the checkpoints archived every 25 epochs, each scored on
+65,775 frames: a fixed random sample of the training set, and of the 90 %
+held-out set. Re-scored on the validation set, those checkpoints reproduce the
+logged validation metrics to 1e-8.*
+
+*Validation and test agree throughout (108.9 against 110.8 meV Å⁻¹ at the last
+archive), so selecting the epoch on validation did not overfit to it. The
+training set is not drawn like the other two. The EnvTok selection holds
+smaller cells (8.3 atoms against 18.3) with larger forces (11 % of atoms above
+5 eV Å⁻¹, against 7.5 %). Its per-atom energy and stress errors are therefore
+higher than validation even though the model was fitted to it. Only its force
+error and loss are lower, and the gap in the loss widens after the learning
+rate starts to drop. Our model passes the authors' EnvTok model on the
+validation frames at epoch 346 (forces) and 496 (energies).*
+
+<p align="center">
   <img src="results/figures/scaling.svg" width="49%" alt="Training throughput against number of GPUs, with linear scaling for reference">
 </p>
 
-*Left: validation error on the 10 % subset used for early stopping. Our model
-passes the authors' EnvTok model on the same frames at epoch 346 (forces) and
-496 (energies). Right: throughput from 1 to 8 GPUs, each a separate allocation
-(7 nodes at 8 GPUs); the efficiency relative to linear scaling is printed at
-each point.*
+*Throughput from 1 to 8 GPUs, each a separate allocation (7 nodes at 8 GPUs);
+the efficiency relative to linear scaling is printed at each point.*
 
 On one A100 with the same cuEquivariance kernels, a training step of this
 implementation reaches 94 % of the throughput of mace-torch: 1,389 against
