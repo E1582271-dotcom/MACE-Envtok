@@ -15,6 +15,7 @@ COMMANDS = {
     "matcalc": ("envtok_mace.bench.matcalc", "MatCalc-Bench (formation energy, moduli, C_V, softening)"),
     "stability": ("envtok_mace.bench.stability", "MLIP-Arena NPT compression MD stability"),
     "nebdft2k": ("envtok_mace.bench.nebdft2k", "LiTraj nebDFT2k Li-ion migration barriers"),
+    "diatomics": ("envtok_mace.bench.diatomics", "MLIP-Arena homonuclear diatomic curves, all elements"),
     "latent": ("envtok_mace.analysis.latent", "latent-space distance from the training data vs force error"),
     "id-ood": ("envtok_mace.analysis.id_ood", "one table of all benchmarks grouped ID / shift / OOD"),
     "learning-curves": ("envtok_mace.analysis.learning", "train vs val loss, and errors per epoch"),

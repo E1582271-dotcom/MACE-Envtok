@@ -27,6 +27,13 @@ All notable changes to this project are recorded here. The format follows
   every 25 epochs on fixed training and held-out subsets, so the training figure
   can show train against validation loss, and train/validation/test errors
   against epoch.
+- **Diatomic curves** (`envtok-mace diatomics`, `results/diatomics/`, figure
+  `diatomics`). MLIP Arena's homonuclear task covers all 68 elements, for this
+  work, the authors' EnvTok model and MACE-OMAT-0. Curves are referenced to two
+  isolated atoms. The arena's smoothness metrics are reported per element, with
+  counts of single-well curves and of wells deeper than any homonuclear bond.
+- **Physics tests:** extensivity under supercells, forces summing to zero,
+  locality beyond the cutoff, and smoothness as a pair crosses the cutoff.
 
 ### Changed
 

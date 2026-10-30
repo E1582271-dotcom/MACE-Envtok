@@ -1134,6 +1134,55 @@ def error_vs_force(results: Path, out: Path) -> None:
         save(fig, out, "error_vs_force")
 
 
+# ----------------------------------------------------------- physical sanity
+@figure
+def diatomics(results: Path, out: Path) -> None:
+    """Do two atoms of the same element repel at short range and bind in one well?"""
+    import matplotlib.pyplot as plt
+    from matplotlib.lines import Line2D
+
+    curves = read_json(results / "diatomics/diatomics_curves.json")
+    summary = read_json(results / "diatomics/diatomics_summary.json")["models"]
+    models = [m for m in MODELS if m in curves]
+    elements = list(curves["mace_omat0"])
+    with style():
+        fig, axes = plt.subplots(4, 4, figsize=(DOUBLE_COLUMN_IN, 6.4))
+        for ax, el in zip(axes.flat, elements):
+            ref = curves["mace_omat0"][el]
+            # y range from the reference model's well, so a collapse leaves the panel
+            span = max(1.0, 2.5 * abs(min(ref["e"])))
+            ax.axhline(0, color=INK["grid"], lw=0.6, zorder=1)
+            for m in models:
+                c = curves[m][el]
+                spec = MODELS[m]
+                ls = spec.get("linestyle", "-")
+                ax.plot(c["r"], c["e"], color=line_color(m), lw=0.9, ls=ls, zorder=3 if m == "ours" else 2)
+            ax.set_xlim(ref["r"][0], min(ref["r"][-1], 6.5))
+            ax.set_ylim(-span, span)
+            ax.text(
+                0.96, 0.92, el, transform=ax.transAxes, ha="right", va="top", fontsize=7, fontweight="bold"
+            )
+        for ax in axes[-1]:
+            ax.set_xlabel("Distance (Å)")
+        for ax in axes[:, 0]:
+            ax.set_ylabel("E − 2E$_\\mathrm{atom}$ (eV)")
+        handles = []
+        for m in models:
+            s = summary[m]
+            deep = ", ".join(s["too_deep"]) or "none"
+            label = (
+                f"{MODELS[m]['label']}: one well for {s['single_well']} of {s['n_elements']} elements; "
+                f"wells deeper than 12 eV: {deep}"
+            )
+            spec = MODELS[m]
+            handles.append(
+                Line2D([], [], color=line_color(m), lw=0.9, ls=spec.get("linestyle", "-"), label=label)
+            )
+        fig.legend(handles=handles, loc="upper left", bbox_to_anchor=(0.06, 1.0), fontsize=6, ncol=1)
+        fig.subplots_adjust(left=0.07, right=0.99, top=0.9, bottom=0.07, hspace=0.32, wspace=0.3)
+        save(fig, out, "diatomics")
+
+
 # ------------------------------------------------------------------------ CLI
 def add_arguments(p: argparse.ArgumentParser) -> None:
     p.add_argument("--results", default="results")
