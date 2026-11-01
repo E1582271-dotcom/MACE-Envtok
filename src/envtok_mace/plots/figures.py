@@ -14,7 +14,7 @@ from pathlib import Path
 import numpy as np
 
 from ..analysis.results_io import MODELS as NAMES
-from ..analysis.results_io import SEEDS, SPEED_MATCHED, load, read_csv, read_json
+from ..analysis.results_io import SEEDS, SPEED_MATCHED, load, read_csv, read_json, read_jsonl
 from .style import (
     DOUBLE_COLUMN_IN,
     EDGE_PT,
@@ -1350,6 +1350,77 @@ def nve_drift(results: Path, out: Path) -> None:
         )
         fig.subplots_adjust(left=0.11, right=0.99, top=0.85, bottom=0.14, wspace=0.08)
         save(fig, out, "nve_drift")
+
+
+# ------------------------------------------------------------------- engineering
+@figure
+def inference_speed(results: Path, out: Path) -> None:
+    """How long does one calculator call take, and how large a system fits in memory?"""
+    import matplotlib.pyplot as plt
+    from matplotlib.lines import Line2D
+
+    rows = [
+        r
+        for name in ("inference_a100", "inference_cpu16")
+        for r in read_jsonl(results / f"benchmarks/{name}.jsonl")
+        if "error" not in r
+    ]
+    series = (
+        ("cuda", "cueq", color("ours"), "o", "A100, cuEquivariance"),
+        ("cuda", "e3nn", color("authors_envtok"), "s", "A100, e3nn"),
+        ("cpu", "e3nn", INK["muted"], "D", "16 CPU cores, e3nn"),
+    )
+    precisions = {"float32": "-", "float64": (0, (4, 2.5))}
+    with style():
+        fig, axes = plt.subplots(1, 2, figsize=(ONE_HALF_COLUMN_IN, 2.8), sharex=True)
+        for ax, key in zip(axes, ("seconds_per_call", "peak_mem_GB")):
+            for device, backend, c, marker, _ in series:
+                for dtype, ls in precisions.items():
+                    sub = [
+                        r
+                        for r in rows
+                        if r["device"] == device and r["backend"] == backend and r["dtype"] == dtype
+                    ]
+                    ax.plot(
+                        [r["atoms"] for r in sub],
+                        [r[key] for r in sub],
+                        color=c,
+                        ls=ls,
+                        lw=0.9,
+                        marker=marker,
+                        ms=2.8,
+                        mew=0,
+                    )
+            ax.set_xscale("log")
+            ax.set_yscale("log")
+            ax.set_xticks([10, 100, 1000, 10000], ["10", "100", "1,000", "10,000"])
+            ax.minorticks_off()
+            ax.set_xlabel("Atoms (fcc Cu, 78 edges per atom)")
+        axes[0].set_yticks([0.1, 1, 10, 100], ["0.1", "1", "10", "100"])
+        axes[0].set_ylabel("Time per call (s)")
+        axes[1].axhline(40, color=INK["grid"], lw=0.8, zorder=0)
+        axes[1].text(
+            5, 46, "memory of an A100, 40 GB", fontsize=5.4, color=INK["muted"], ha="left", va="bottom"
+        )
+        axes[1].set_yticks([0.1, 1, 10, 100], ["0.1", "1", "10", "100"])
+        axes[1].set_ylabel("Peak memory (GB)")
+        letter(axes[0], "a", x=-0.2)
+        letter(axes[1], "b", x=-0.2)
+        handles = [
+            Line2D([], [], color=c, lw=0.9, marker=m, ms=2.8, mew=0, label=name) for *_, c, m, name in series
+        ]
+        handles += [Line2D([], [], color=INK["ink2"], lw=0.9, ls=ls, label=d) for d, ls in precisions.items()]
+        fig.legend(
+            handles=handles,
+            loc="upper center",
+            bbox_to_anchor=(0.53, 1.01),
+            ncol=5,
+            fontsize=5.6,
+            handletextpad=0.4,
+            columnspacing=1.0,
+        )
+        fig.subplots_adjust(left=0.09, right=0.99, top=0.88, bottom=0.15, wspace=0.28)
+        save(fig, out, "inference_speed")
 
 
 # ------------------------------------------------------------------------ CLI

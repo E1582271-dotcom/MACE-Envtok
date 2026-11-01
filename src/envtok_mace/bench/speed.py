@@ -2,12 +2,20 @@
 (with and without cuEquivariance kernels) on the same batches, one GPU.
 
 A step is forward (energy, forces, stress), loss, backward and an Adam update.
+
+With ``--mode infer``: the latency and memory of one ASE calculator call against system
+size, on fcc copper, a dense metal, so the edges per atom are at the high end of real
+structures. Each precision and backend runs in a process of its own, so the peak memory
+of one does not carry over into the next. A size that runs out of memory, or whose first
+call exceeds ``--max-seconds``, is the last one tried.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import resource
+import sys
 import time
 
 import numpy as np
@@ -17,6 +25,9 @@ from ..data.batch import collate
 from ..data.frames import Frames
 from ..model.mace import MACE, MACEConfig
 from ..train.loss import LossConfig, combine, loss_counts, loss_sums
+from ._runner import spawn
+
+INFER_REPEATS = (1, 2, 3, 4, 5, 7, 10, 13, 16, 18)  # fcc cubic cell: 4 to 23,328 atoms
 
 
 def _make_model(impl: str, device: torch.device):
@@ -79,17 +90,103 @@ def benchmark(
     }
 
 
+def peak_memory_GB(device: torch.device) -> float:
+    """Peak GPU memory of this size, or the process's peak resident memory on the CPU, which
+    is the peak of this size because the sizes ascend."""
+    if device.type == "cuda":
+        return torch.cuda.max_memory_allocated(device) / 1e9
+    rss = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
+    return rss / 1e9 if sys.platform == "darwin" else rss / 1e6  # bytes on macOS, kB on Linux
+
+
+def _infer(model, device, dtype, backend, threads, calls, max_seconds, repeats) -> None:
+    from ase.build import bulk
+
+    from ..eval.ase_calc import EnvTokCalculator
+
+    torch.set_num_threads(threads)
+    device = torch.device(device)
+    calc = EnvTokCalculator(model, device=device, dtype=dtype, backend=backend)
+    for n in repeats:
+        atoms = bulk("Cu", cubic=True).repeat(n)
+        atoms.rattle(0.05, seed=0)
+        rec = {
+            "device": str(device),
+            "dtype": dtype,
+            "backend": calc.model.config.backend,
+            "threads": threads,
+        }
+        rec["atoms"] = len(atoms)
+        if device.type == "cuda":
+            torch.cuda.empty_cache()
+            torch.cuda.reset_peak_memory_stats(device)
+        t0 = time.perf_counter()
+        try:
+            batch = calc._batch(atoms)
+            rec["edges"] = batch.edge_index.shape[1]
+            rec["graph_s"] = time.perf_counter() - t0
+            calc.calculate(atoms, ["energy", "forces", "stress"])
+            rec["first_call_s"] = time.perf_counter() - t0
+            times = []
+            for _ in range(calls if rec["first_call_s"] < max_seconds else 0):
+                t0 = time.perf_counter()
+                calc.calculate(atoms, ["energy", "forces", "stress"])
+                times.append(time.perf_counter() - t0)
+            s = float(np.median(times)) if times else rec["first_call_s"]
+            rec["seconds_per_call"] = s
+            rec["us_per_atom_call"] = s / len(atoms) * 1e6
+            rec["peak_mem_GB"] = peak_memory_GB(device)
+        except RuntimeError as exc:
+            if "out of memory" not in str(exc).lower():
+                raise
+            rec["error"] = "oom"
+        print(json.dumps(rec), flush=True)
+        if "error" in rec or rec["first_call_s"] >= max_seconds:
+            break
+
+
+def run_infer(args: argparse.Namespace) -> None:
+    for dtype in args.dtypes:
+        for backend in args.backends:
+            job = (
+                args.model,
+                args.device,
+                dtype,
+                backend,
+                args.threads,
+                args.calls,
+                args.max_seconds,
+                args.repeats,
+            )
+            spawn(_infer, [job], check=False)  # a process killed for memory still leaves the others
+
+
 def add_arguments(p: argparse.ArgumentParser) -> None:
-    p.add_argument("--frames", required=True, help="Frames HDF5 with neighbour lists")
+    p.add_argument("--mode", default="train", choices=["train", "infer"])
+    p.add_argument("--frames", default=None, help="train: Frames HDF5 with neighbour lists")
     p.add_argument("--impl", nargs="+", default=["ours", "ours-cueq", "mace-e3nn", "mace-cueq"])
     p.add_argument("--batch-size", type=int, default=128)
     p.add_argument("--steps", type=int, default=50)
     p.add_argument("--warmup", type=int, default=10)
     p.add_argument("--device", default="cuda")
     p.add_argument("--profile", action="store_true", help="print the most expensive ops of our model")
+    p.add_argument("--model", default=None, help="infer: weights file or checkpoint")
+    p.add_argument("--dtypes", nargs="+", default=["float32", "float64"], help="infer")
+    p.add_argument("--backends", nargs="+", default=["e3nn"], choices=["e3nn", "cueq"], help="infer")
+    p.add_argument("--threads", type=int, default=1, help="infer: torch threads")
+    p.add_argument("--calls", type=int, default=5, help="infer: timed calls after the first, per size")
+    p.add_argument("--max-seconds", type=float, default=120.0, help="infer: stop after a slower first call")
+    p.add_argument(
+        "--repeats", nargs="+", type=int, default=list(INFER_REPEATS), help="infer: cubic cells per axis"
+    )
 
 
 def run(args: argparse.Namespace) -> None:
+    if args.mode == "infer":
+        run_infer(args)
+        return
+    if args.frames is None:
+        raise SystemExit("bench-speed needs --frames")
     device = torch.device(args.device)
     frames = Frames.load(args.frames)
     print(

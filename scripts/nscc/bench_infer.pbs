@@ -1,0 +1,19 @@
+#!/bin/bash
+# Inference latency and memory against system size, on one A100 or on CPU cores of a node.
+#   qsub -P <project> -v MODEL=<weights>,OUT=<file.jsonl> scripts/nscc/bench_infer.pbs
+#   qsub -P <project> -l select=1:ncpus=16:mem=110gb -v MODEL=<weights>,OUT=<file.jsonl>,DEVICE=cpu,BACKENDS=e3nn \
+#       scripts/nscc/bench_infer.pbs
+#PBS -N envtok-infer
+#PBS -q normal
+#PBS -l select=1:ncpus=16:ngpus=1:mem=110gb
+#PBS -l walltime=01:00:00
+#PBS -j oe
+set -euo pipefail
+cd "${PBS_O_WORKDIR:-$PWD}"
+. scripts/nscc/env.sh
+: "${MODEL:?}" "${OUT:?}"
+export OMP_NUM_THREADS=${THREADS:-16}
+mkdir -p "$(dirname "$OUT")"
+
+envtok-mace bench-speed --mode infer --model "$MODEL" --device "${DEVICE:-cuda}" \
+    --backends ${BACKENDS:-e3nn cueq} --threads "${THREADS:-16}" ${EXTRA_ARGS:-} | grep '^{' >> "$OUT"

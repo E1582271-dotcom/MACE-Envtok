@@ -28,6 +28,10 @@ def read_csv(path: Path) -> list[dict]:
         return list(csv.DictReader(fh))
 
 
+def read_jsonl(path: Path) -> list[dict]:
+    return [json.loads(line) for line in Path(path).read_text().splitlines()]
+
+
 def _eval_name(label: str) -> str:
     if label == "ours_envtok":
         return "ours"
