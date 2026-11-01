@@ -56,15 +56,27 @@ _VOIGT_COLS = (0, 1, 2, 2, 2, 1)
 
 # --------------------------------------------------------------------- scoring
 def score(
-    model, frames: Frames, batches: list[np.ndarray], device: torch.device, dtype: torch.dtype
+    model,
+    frames: Frames,
+    batches: list[np.ndarray],
+    device: torch.device,
+    dtype: torch.dtype,
+    collect=None,
 ) -> tuple[dict, dict]:
-    """Per-structure and per-atom errors, in the frames' own order."""
+    """Per-structure and per-atom errors, in the frames' own order.
+
+    ``collect`` is called as in ``eval.metrics.evaluate``. The predicted values go to
+    a separate file, not into these dicts: ``align`` reorders only arrays shaped like
+    ``sid``, so a per-structure (N, 6) stress would silently stay in the old order.
+    """
     n, a = len(frames), int(frames.atom_ptr[-1])
     ps = {k: np.full(n, np.nan) for k, _, _ in QUANTITIES}
     d_force = np.zeros((a, 3), dtype=np.float32)
     for idx in batches:
         batch = collate(frames, idx).to(device=device, dtype=dtype)
         out = model(batch, compute_force=True, compute_stress=True, training=False)
+        if collect is not None:
+            collect(idx, out, batch)
         ng = batch.num_graphs
         g, na = batch.batch, batch.natoms.double()
         df = (out["forces"].detach() - batch.forces).double()
@@ -453,6 +465,11 @@ def add_arguments(p: argparse.ArgumentParser) -> None:
         help="measure the release's stress sign and component order",
     )
     p.add_argument("--n", type=int, default=None, help="score a fixed random subset of this size")
+    p.add_argument(
+        "--save-predictions",
+        action="store_true",
+        help="also write the predicted values to predictions.h5 in --out (see eval/predictions.py)",
+    )
     p.add_argument("--batch-size", type=int, default=128)
     p.add_argument("--max-edges", type=int, default=60000)
     p.add_argument("--device", default="cuda")
@@ -490,7 +507,21 @@ def run(args: argparse.Namespace) -> None:
         print(json.dumps(calibrate_stress(model, frames, batches, device, dtype), indent=2))
         return
 
-    per_structure, per_atom = score(model, frames, batches, device, dtype)
+    from ..eval import predictions
+
+    collect = predictions.Collector() if args.save_predictions else None
+    per_structure, per_atom = score(model, frames, batches, device, dtype, collect=collect)
+    if collect is not None:
+        collect.save(
+            Path(args.out) / "predictions.h5",
+            frames,
+            label=Path(args.out).name,
+            model=str(args.model),
+            model_sha256=predictions.sha256(args.model),
+            frames_file=str(args.frames),
+            dtype=args.dtype,
+            backend=args.backend,
+        )
     if args.n is not None:  # keep only what was scored
         per_structure = {
             k: (v[idx] if getattr(v, "shape", ()) == (len(frames),) else v) for k, v in per_structure.items()

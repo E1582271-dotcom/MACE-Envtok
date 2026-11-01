@@ -1,0 +1,12 @@
+source,n_structures,n_atoms
+aimd-from-PBE-1000-npt,182977,1064637
+aimd-from-PBE-1000-nvt,161982,948411
+aimd-from-PBE-3000-npt,1247,77944
+aimd-from-PBE-3000-nvt,1298,80270
+rattled-1000,104118,1233408
+rattled-1000-subsampled,33591,402371
+rattled-300,51427,611117
+rattled-300-subsampled,29216,353529
+rattled-500,54346,648026
+rattled-500-subsampled,33979,405920
+rattled-relax,141540,740620

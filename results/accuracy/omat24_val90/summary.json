@@ -1,0 +1,124 @@
+{
+ "labels": [
+  "ours",
+  "authors_envtok",
+  "mace_omat0"
+ ],
+ "n_structures": 591981,
+ "models": {
+  "ours": {
+   "model": "best.pt",
+   "model_sha256": "b43c9f22e5e16980ca692601d1161762f0d7ccc170733644c8d23401aa1cca7c",
+   "dtype": "float32",
+   "n_nonfinite": 0,
+   "domains": {
+    "all": {
+     "n_structures": 591981,
+     "n_atoms": 10815787,
+     "energy_mae_meV_per_atom": 24.590038260905136,
+     "energy_rmse_meV_per_atom": 215.06215439847873,
+     "energy_r2": 0.9883545909932284,
+     "energy_abs_err_meV_per_atom": {
+      "p50": 14.289461395089274,
+      "p90": 48.96582184461806,
+      "p99": 145.94131384453067,
+      "max": 80578.77624102173
+     },
+     "force_mae_meV_per_A": 109.36953956261154,
+     "force_rmse_meV_per_A": 433.8048024394227,
+     "force_r2": 0.9794157074776341,
+     "force_err_norm_meV_per_A": {
+      "p50": 149.3400702125214,
+      "p90": 465.5079929155391,
+      "p99": 1069.8064884392531,
+      "max": 417922.7439419606
+     },
+     "stress_mae_voigt6_meV_per_A3": 3.5293606689632964,
+     "stress_r2": 0.9363517358920657,
+     "stress_struct_mae_voigt6_meV_per_A3": {
+      "p50": 2.330662061770757,
+      "p90": 6.991564024550219,
+      "p99": 19.008668149763164,
+      "max": 2407.547657688459
+     }
+    }
+   }
+  },
+  "authors_envtok": {
+   "model": "mace-subset-2nd_gen_chemenv_v14_T100_a1_suppm-omat-medium-be1024_universal_loss_dft_e0s_use_stress_delta_0.01_lr_0.001_rb10_run-1.model",
+   "model_sha256": "b400821a4846e7e6bbbd94aeadc62b6c6efa0bdcc6715ad9409be81946d45937",
+   "dtype": "float32",
+   "n_nonfinite": 0,
+   "domains": {
+    "all": {
+     "n_structures": 591981,
+     "n_atoms": 10815787,
+     "energy_mae_meV_per_atom": 25.467068024717783,
+     "energy_rmse_meV_per_atom": 216.527105610753,
+     "energy_r2": 0.9881953992448679,
+     "energy_abs_err_meV_per_atom": {
+      "p50": 15.109499982910002,
+      "p90": 51.02845514648493,
+      "p99": 145.67612379834006,
+      "max": 80441.41948290405
+     },
+     "force_mae_meV_per_A": 112.10179515944526,
+     "force_rmse_meV_per_A": 443.8663812197831,
+     "force_r2": 0.9784497784769325,
+     "force_err_norm_meV_per_A": {
+      "p50": 152.90175077017986,
+      "p90": 476.59853200476437,
+      "p99": 1102.6635612127093,
+      "max": 420003.2038337319
+     },
+     "stress_mae_voigt6_meV_per_A3": 3.6158067791473107,
+     "stress_r2": 0.9310566369341708,
+     "stress_struct_mae_voigt6_meV_per_A3": {
+      "p50": 2.3847100092098117,
+      "p90": 7.219700909142072,
+      "p99": 19.3904071425397,
+      "max": 2466.5701165795326
+     }
+    }
+   }
+  },
+  "mace_omat0": {
+   "model": "mace-omat-0-medium.model",
+   "model_sha256": "d4b14be9afa294eebdbe31a0280b26a0fa29715771e978cbfd3ca24e0d90307a",
+   "dtype": "float32",
+   "n_nonfinite": 0,
+   "domains": {
+    "all": {
+     "n_structures": 591981,
+     "n_atoms": 10815787,
+     "energy_mae_meV_per_atom": 17.473240288314965,
+     "energy_rmse_meV_per_atom": 212.74773318596232,
+     "energy_r2": 0.9886038896744539,
+     "energy_abs_err_meV_per_atom": {
+      "p50": 9.4614220566406,
+      "p90": 32.45077777766927,
+      "p99": 116.21727791840802,
+      "max": 80760.68818636474
+     },
+     "force_mae_meV_per_A": 84.53662763498909,
+     "force_rmse_meV_per_A": 289.8153151833825,
+     "force_r2": 0.9908126576984427,
+     "force_err_norm_meV_per_A": {
+      "p50": 116.62766638988083,
+      "p90": 361.28364479956,
+      "p99": 827.7829156564387,
+      "max": 356738.174151444
+     },
+     "stress_mae_voigt6_meV_per_A3": 3.205808202369024,
+     "stress_r2": 0.9434689988301734,
+     "stress_struct_mae_voigt6_meV_per_A3": {
+      "p50": 1.9858253848118088,
+      "p90": 6.592989743997653,
+      "p99": 18.38501751287061,
+      "max": 2413.833367327849
+     }
+    }
+   }
+  }
+ }
+}

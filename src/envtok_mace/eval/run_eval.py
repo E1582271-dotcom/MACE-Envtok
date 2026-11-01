@@ -18,6 +18,7 @@ from ..data.frames import Frames
 from ..data.samplers import eval_shards
 from ..model.backends import load_weights
 from ..model.mace import MACE, MACEConfig
+from . import predictions
 from .metrics import evaluate
 
 
@@ -75,6 +76,12 @@ def add_arguments(p: argparse.ArgumentParser) -> None:
         help="evaluate with this backend (default: the one the model was trained with)",
     )
     p.add_argument("--out", default=None, help="write the results as JSON")
+    p.add_argument(
+        "--save-predictions",
+        default=None,
+        metavar="DIR",
+        help="also write every structure's predictions to DIR/<label>.h5 (see eval/predictions.py)",
+    )
 
 
 def run(args: argparse.Namespace) -> None:
@@ -90,8 +97,20 @@ def run(args: argparse.Namespace) -> None:
     for label, path in zip(labels, args.models):
         try:
             model = load_model(path, device, dtype, args.backend)
-            metrics = evaluate(model, frames, batches, device, dtype)
+            collect = predictions.Collector() if args.save_predictions else None
+            metrics = evaluate(model, frames, batches, device, dtype, collect=collect)
             results[label] = {"model": str(path), **metrics}
+            if collect is not None:
+                collect.save(
+                    Path(args.save_predictions) / f"{label}.h5",
+                    frames,
+                    label=label,
+                    model=str(path),
+                    model_sha256=predictions.sha256(path),
+                    frames_file=str(args.frames),
+                    dtype=args.dtype,
+                    backend=args.backend,
+                )
             print(json.dumps({"label": label, **metrics}), flush=True)
         except Exception as exc:  # one failing model must not lose the others
             results[label] = {"model": str(path), "error": repr(exc)}

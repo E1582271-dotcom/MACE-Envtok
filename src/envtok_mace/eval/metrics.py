@@ -38,14 +38,21 @@ def evaluate(
     device: torch.device,
     dtype: torch.dtype,
     loss_cfg: LossConfig | None = None,
+    collect=None,
 ) -> dict[str, float]:
-    """``batches`` are this rank's index arrays; results are global (all-reduced)."""
+    """``batches`` are this rank's index arrays; results are global (all-reduced).
+
+    ``collect(idx, out, batch)``, if given, sees every batch's model output, e.g. an
+    ``eval.predictions.Collector`` that keeps the per-structure predictions.
+    """
     model = unwrap(model)
     loss_cfg = loss_cfg or LossConfig()
     acc = torch.zeros(len(_FIELDS), dtype=torch.float64, device=device)
     for idx in batches:
         batch = collate(frames, idx).to(device=device, dtype=dtype)
         out = model(batch, compute_force=True, compute_stress=True, training=False)
+        if collect is not None:
+            collect(idx, out, batch)
         e_err = ((out["energy"].detach() - batch.energy) / batch.natoms).double()
         f_err = (out["forces"].detach() - batch.forces).double()
         s_err = (out["stress"].detach() - batch.stress).double()
