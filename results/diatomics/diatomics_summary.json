@@ -1,0 +1,101 @@
+{
+ "labels": [
+  "ours",
+  "authors_envtok",
+  "mace_omat0"
+ ],
+ "models": {
+  "ours": {
+   "n_elements": 68,
+   "single_well": 54,
+   "repulsive_at_close_range": 66,
+   "too_deep": [
+    "H",
+    "B",
+    "C",
+    "F"
+   ],
+   "mean": {
+    "force-flip-times": 1.2352941176470589,
+    "energy-diff-flip-times": 1.1764705882352942,
+    "force-jump": 885.368849267353,
+    "energy-jump": 0.4224303186996162,
+    "tortuosity": 1.0833116194020034,
+    "conservation-deviation": 1.1167014441204104,
+    "spearman-repulsion-energy": -0.9979825648728434,
+    "spearman-attraction-energy": 0.9219627686904673
+   },
+   "median": {
+    "force-flip-times": 1.0,
+    "energy-diff-flip-times": 1.0,
+    "force-jump": 0.09313070999999852,
+    "energy-jump": 0.002708350643126134,
+    "tortuosity": 1.0,
+    "conservation-deviation": 0.00286001210822784,
+    "spearman-repulsion-energy": -1.0,
+    "spearman-attraction-energy": 0.9764835402990204
+   }
+  },
+  "authors_envtok": {
+   "n_elements": 68,
+   "single_well": 39,
+   "repulsive_at_close_range": 65,
+   "too_deep": [
+    "N",
+    "F",
+    "Si",
+    "P",
+    "Cr",
+    "Mn"
+   ],
+   "mean": {
+    "force-flip-times": 1.7647058823529411,
+    "energy-diff-flip-times": 1.6470588235294117,
+    "force-jump": 63438.03154282102,
+    "energy-jump": 264.3344955770104,
+    "tortuosity": 4.898323626275017,
+    "conservation-deviation": 105.70886401121439,
+    "spearman-repulsion-energy": -0.9893881870681518,
+    "spearman-attraction-energy": 0.8859066942583909
+   },
+   "median": {
+    "force-flip-times": 1.0,
+    "energy-diff-flip-times": 1.0,
+    "force-jump": 4.6735466700000075,
+    "energy-jump": 0.004905357503762975,
+    "tortuosity": 1.0000000000000002,
+    "conservation-deviation": 0.010885383254549234,
+    "spearman-repulsion-energy": -1.0,
+    "spearman-attraction-energy": 0.9793115828259654
+   }
+  },
+  "mace_omat0": {
+   "n_elements": 68,
+   "single_well": 57,
+   "repulsive_at_close_range": 67,
+   "too_deep": [
+    "Ar"
+   ],
+   "mean": {
+    "force-flip-times": 1.2352941176470589,
+    "energy-diff-flip-times": 1.0294117647058822,
+    "force-jump": 1.981425285294118,
+    "energy-jump": 0.02567619708878341,
+    "tortuosity": 1.0052576813311989,
+    "conservation-deviation": 0.03705360950800285,
+    "spearman-repulsion-energy": -0.9992395993318083,
+    "spearman-attraction-energy": 0.8782856695022118
+   },
+   "median": {
+    "force-flip-times": 1.0,
+    "energy-diff-flip-times": 1.0,
+    "force-jump": 0.005402030000000174,
+    "energy-jump": 0.0030045568124803523,
+    "tortuosity": 1.0000000000000002,
+    "conservation-deviation": 0.0067999052684498355,
+    "spearman-repulsion-energy": -1.0,
+    "spearman-attraction-energy": 0.9740154680735058
+   }
+  }
+ }
+}

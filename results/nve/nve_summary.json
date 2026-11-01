@@ -1,0 +1,122 @@
+[
+ {
+  "model": "ours",
+  "dtype": "float32",
+  "temperature_K": 1000.0,
+  "n_runs": 20,
+  "n_failed": 0,
+  "median_abs_drift_meV_per_atom_ps": 0.00012101707167417461,
+  "max_abs_drift_meV_per_atom_ps": 0.018101749389711336,
+  "median_T_K": 1033.8169904182873
+ },
+ {
+  "model": "ours",
+  "dtype": "float32",
+  "temperature_K": 300.0,
+  "n_runs": 20,
+  "n_failed": 0,
+  "median_abs_drift_meV_per_atom_ps": 0.00013670617088827575,
+  "max_abs_drift_meV_per_atom_ps": 0.01818477992963969,
+  "median_T_K": 312.2777074335863
+ },
+ {
+  "model": "ours",
+  "dtype": "float64",
+  "temperature_K": 1000.0,
+  "n_runs": 20,
+  "n_failed": 0,
+  "median_abs_drift_meV_per_atom_ps": 0.00015970046306134175,
+  "max_abs_drift_meV_per_atom_ps": 0.0220590088573461,
+  "median_T_K": 1038.6885259411088
+ },
+ {
+  "model": "ours",
+  "dtype": "float64",
+  "temperature_K": 300.0,
+  "n_runs": 20,
+  "n_failed": 0,
+  "median_abs_drift_meV_per_atom_ps": 6.248126670550969e-05,
+  "max_abs_drift_meV_per_atom_ps": 0.018442197515551515,
+  "median_T_K": 312.7425243189781
+ },
+ {
+  "model": "authors_envtok",
+  "dtype": "float32",
+  "temperature_K": 1000.0,
+  "n_runs": 20,
+  "n_failed": 0,
+  "median_abs_drift_meV_per_atom_ps": 0.00016735463021165932,
+  "max_abs_drift_meV_per_atom_ps": 0.020318671525155475,
+  "median_T_K": 1041.8677923354417
+ },
+ {
+  "model": "authors_envtok",
+  "dtype": "float32",
+  "temperature_K": 300.0,
+  "n_runs": 20,
+  "n_failed": 0,
+  "median_abs_drift_meV_per_atom_ps": 8.294890056885593e-05,
+  "max_abs_drift_meV_per_atom_ps": 0.019440432533053054,
+  "median_T_K": 316.6271350255928
+ },
+ {
+  "model": "authors_envtok",
+  "dtype": "float64",
+  "temperature_K": 1000.0,
+  "n_runs": 20,
+  "n_failed": 0,
+  "median_abs_drift_meV_per_atom_ps": 0.00016806605869247034,
+  "max_abs_drift_meV_per_atom_ps": 0.018703628139086142,
+  "median_T_K": 1043.0961819422578
+ },
+ {
+  "model": "authors_envtok",
+  "dtype": "float64",
+  "temperature_K": 300.0,
+  "n_runs": 20,
+  "n_failed": 0,
+  "median_abs_drift_meV_per_atom_ps": 0.0001348883323868604,
+  "max_abs_drift_meV_per_atom_ps": 0.019758153163366855,
+  "median_T_K": 316.60218617664015
+ },
+ {
+  "model": "mace_omat0",
+  "dtype": "float32",
+  "temperature_K": 1000.0,
+  "n_runs": 20,
+  "n_failed": 0,
+  "median_abs_drift_meV_per_atom_ps": 0.00010922214295171915,
+  "max_abs_drift_meV_per_atom_ps": 0.019042680914207865,
+  "median_T_K": 1028.029358494307
+ },
+ {
+  "model": "mace_omat0",
+  "dtype": "float32",
+  "temperature_K": 300.0,
+  "n_runs": 20,
+  "n_failed": 0,
+  "median_abs_drift_meV_per_atom_ps": 7.171782747073839e-05,
+  "max_abs_drift_meV_per_atom_ps": 0.02031792651978704,
+  "median_T_K": 312.57271720711964
+ },
+ {
+  "model": "mace_omat0",
+  "dtype": "float64",
+  "temperature_K": 1000.0,
+  "n_runs": 20,
+  "n_failed": 0,
+  "median_abs_drift_meV_per_atom_ps": 0.00011377884044160813,
+  "max_abs_drift_meV_per_atom_ps": 0.021532072639265445,
+  "median_T_K": 1028.0585028115365
+ },
+ {
+  "model": "mace_omat0",
+  "dtype": "float64",
+  "temperature_K": 300.0,
+  "n_runs": 20,
+  "n_failed": 0,
+  "median_abs_drift_meV_per_atom_ps": 6.81204177299801e-05,
+  "max_abs_drift_meV_per_atom_ps": 0.01993622964889626,
+  "median_T_K": 312.5730783746641
+ }
+]

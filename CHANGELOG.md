@@ -27,6 +27,23 @@ All notable changes to this project are recorded here. The format follows
   every 25 epochs on fixed training and held-out subsets, so the training figure
   can show train against validation loss, and train/validation/test errors
   against epoch.
+- **Diatomic curves** (`envtok-mace diatomics`, `results/diatomics/`, figure
+  `diatomics`). MLIP Arena's homonuclear task covers all 68 elements, for this
+  work, the authors' EnvTok model and MACE-OMAT-0. Curves are referenced to two
+  isolated atoms. The arena's smoothness metrics are reported per element, with
+  counts of single-well curves and of wells deeper than any homonuclear bond.
+- **Equation of state** (`envtok-mace eos`, `results/eos/`, figure `eos`). MLIP
+  Arena's EOS steps on its WBM set, for this work, the authors' EnvTok model and
+  MACE-OMAT-0: the 610 of 1,000 structures with every element in the model's table.
+  The arena's smoothness metrics are reported per structure. The Birch-Murnaghan
+  bulk modulus is compared with MACE-OMAT-0, because the set has no DFT moduli.
+- **NVE drift** (`envtok-mace nve`, `results/nve/`, figure `nve_drift`). The
+  total-energy drift over 10 ps on 20 WBM supercells, in float32 and float64, for
+  the same three models. Runs start at a nominal 300 and 1000 K and are shown at
+  their measured temperature, because some structures heat up well above their
+  start in all three models.
+- **Physics tests:** extensivity under supercells, forces summing to zero,
+  locality beyond the cutoff, and smoothness as a pair crosses the cutoff.
 
 ### Changed
 

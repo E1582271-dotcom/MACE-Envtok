@@ -1134,6 +1134,224 @@ def error_vs_force(results: Path, out: Path) -> None:
         save(fig, out, "error_vs_force")
 
 
+# ----------------------------------------------------------- physical sanity
+@figure
+def diatomics(results: Path, out: Path) -> None:
+    """Do two atoms of the same element repel at short range and bind in one well?"""
+    import matplotlib.pyplot as plt
+    from matplotlib.lines import Line2D
+
+    curves = read_json(results / "diatomics/diatomics_curves.json")
+    summary = read_json(results / "diatomics/diatomics_summary.json")["models"]
+    models = [m for m in MODELS if m in curves]
+    elements = list(curves["mace_omat0"])
+    with style():
+        fig, axes = plt.subplots(4, 4, figsize=(DOUBLE_COLUMN_IN, 6.4))
+        for ax, el in zip(axes.flat, elements):
+            ref = curves["mace_omat0"][el]
+            # y range from the reference model's well, so a collapse leaves the panel
+            span = max(1.0, 2.5 * abs(min(ref["e"])))
+            ax.axhline(0, color=INK["grid"], lw=0.6, zorder=1)
+            for m in models:
+                c = curves[m][el]
+                spec = MODELS[m]
+                ls = spec.get("linestyle", "-")
+                ax.plot(c["r"], c["e"], color=line_color(m), lw=0.9, ls=ls, zorder=3 if m == "ours" else 2)
+            ax.set_xlim(ref["r"][0], min(ref["r"][-1], 6.5))
+            ax.set_ylim(-span, span)
+            ax.text(
+                0.96, 0.92, el, transform=ax.transAxes, ha="right", va="top", fontsize=7, fontweight="bold"
+            )
+        for ax in axes[-1]:
+            ax.set_xlabel("Distance (Å)")
+        for ax in axes[:, 0]:
+            ax.set_ylabel("E − 2E$_\\mathrm{atom}$ (eV)")
+        handles = []
+        for m in models:
+            s = summary[m]
+            deep = ", ".join(s["too_deep"]) or "none"
+            label = (
+                f"{MODELS[m]['label']}: one well for {s['single_well']} of {s['n_elements']} elements; "
+                f"wells deeper than 12 eV: {deep}"
+            )
+            spec = MODELS[m]
+            handles.append(
+                Line2D([], [], color=line_color(m), lw=0.9, ls=spec.get("linestyle", "-"), label=label)
+            )
+        fig.legend(handles=handles, loc="upper left", bbox_to_anchor=(0.06, 1.0), fontsize=6, ncol=1)
+        fig.subplots_adjust(left=0.07, right=0.99, top=0.9, bottom=0.07, hspace=0.32, wspace=0.3)
+        save(fig, out, "diatomics")
+
+
+@figure
+def eos(results: Path, out: Path) -> None:
+    """Do energy-volume curves form one smooth well, and do the models agree on the bulk modulus?"""
+    import matplotlib.pyplot as plt
+    from matplotlib.lines import Line2D
+
+    summary = read_json(results / "eos/eos_summary.json")
+    rows = read_csv(results / "eos/eos_structures.csv")
+    moduli = {
+        label: {r["id"]: float(r["K_GPa"]) for r in rows if r["model"] == label and r["K_GPa"]}
+        for label in summary["labels"]
+    }
+    models = [m for m in MODELS if m in moduli]
+    ratios = summary["volume_ratios"]
+    with style():
+        fig, axes = plt.subplots(1, 3, figsize=(DOUBLE_COLUMN_IN, 2.95))
+        for ax in axes:
+            ax.set_box_aspect(1)
+        ax = axes[0]
+        for m in models:
+            band = summary["bands"][m]
+            ls = MODELS[m].get("linestyle", "-")
+            if m == "mace_omat0":  # a reference, so drawn as lines over the two bands
+                for key, lw in (("p10_meV", 0.6), ("p90_meV", 0.6)):
+                    ax.plot(ratios, band[key], color=line_color(m), lw=lw, ls=ls, zorder=4)
+            else:
+                ax.fill_between(ratios, band["p10_meV"], band["p90_meV"], color=color(m), alpha=0.2, lw=0)
+            ax.plot(ratios, band["p50_meV"], color=line_color(m), lw=1.0, ls=ls, zorder=4 if ls != "-" else 3)
+        ax.set_xlabel("V / V$_\\mathrm{relaxed}$")
+        ax.set_ylabel("E − E(V$_\\mathrm{relaxed}$) (meV/atom)")
+        ax.text(
+            0.5,
+            0.95,
+            "median, 10th–90th percentile\nthe three models overlap",
+            transform=ax.transAxes,
+            ha="center",
+            va="top",
+            fontsize=5.5,
+        )
+        letter(ax, "a")
+
+        low, high = 0.5, 600.0
+        reference_k = moduli["mace_omat0"]
+        names = {"ours": "this work", "authors_envtok": "authors' EnvTok"}
+        for ax, (m, name), tag in zip(axes[1:], names.items(), "bc"):
+            x, y = np.array([(reference_k[i], k) for i, k in moduli[m].items() if i in reference_k]).T
+            shown = (x > 0) & (y > 0)  # a fit can return a negative modulus, which a log axis cannot show
+            ax.plot([low, high], [low, high], color=INK["muted"], lw=0.6, zorder=1)
+            ax.plot(
+                x[shown], y[shown], MODELS[m]["marker"], color=color(m), ms=2.2, mew=0, alpha=0.65, zorder=2
+            )
+            ax.set_xscale("log")
+            ax.set_yscale("log")
+            ax.set_xlim(low, high)
+            ax.set_ylim(low, high)
+            ax.set_xlabel("K, MACE-OMAT-0 (GPa)")
+            ax.set_ylabel(f"K, {name} (GPa)")
+            agreement = summary["models"][m]["K_against_mace_omat0"]
+            note = f"n = {agreement['n']}\nmedian |ΔK| = {agreement['median_abs_GPa']:.1f} GPa"
+            if not shown.all():
+                note += f"\nK ≤ 0 not shown: {int((~shown).sum())}"
+            ax.text(0.05, 0.95, note, transform=ax.transAxes, va="top", fontsize=5.5)
+            letter(ax, tag)
+
+        handles = []
+        for m in models:
+            s = summary["models"][m]
+            label = (
+                f"{MODELS[m]['label']}: one well for {s['one_well']} of {s['n_structures']} structures; "
+                f"no fit for {s['n_without_fit']}"
+            )
+            handles.append(
+                Line2D([], [], color=line_color(m), lw=1.0, ls=MODELS[m].get("linestyle", "-"), label=label)
+            )
+        fig.legend(handles=handles, loc="upper left", bbox_to_anchor=(0.06, 1.0), fontsize=6, ncol=1)
+        fig.subplots_adjust(left=0.075, right=0.99, top=0.79, bottom=0.145, wspace=0.34)
+        save(fig, out, "eos")
+
+
+@figure
+def nve_drift(results: Path, out: Path) -> None:
+    """Is total energy conserved in NVE, whatever the model, the precision or the temperature?"""
+    import matplotlib.pyplot as plt
+    from matplotlib.lines import Line2D
+
+    rows = read_csv(results / "nve/nve_runs.csv")
+
+    def values(subset: list[dict], key: str) -> np.ndarray:
+        return np.array([float(r[key]) for r in subset])
+
+    # 3 sigma of a fitted slope with independent residuals, per kelvin; the residuals oscillate,
+    # so the real noise is larger
+    sigma = values(rows, "scatter_meV_per_atom") / (
+        values(rows, "total_fs") * 1e-3 * np.sqrt(values(rows, "n_frames") / 12)
+    )
+    noise_per_K = 3 * np.median(sigma / values(rows, "T_mean_K"))
+    worst = max(rows, key=lambda r: abs(float(r["drift_meV_per_atom_ps"])))["formula"]
+    models = ("mace_omat0", "authors_envtok", "ours")
+    markers = {m: MODELS[m]["marker"] or "x" for m in models}
+    edges = {m: 0.7 if markers[m] == "x" else 0 for m in models}
+    with style():
+        fig, axes = plt.subplots(1, 2, figsize=(ONE_HALF_COLUMN_IN, 2.95), sharex=True, sharey=True)
+        for i, (ax, dtype) in enumerate(zip(axes, ("float32", "float64"))):
+            mine = [r for r in rows if r["dtype"] == dtype]
+            for nominal in (300, 1000):
+                ax.axvline(nominal, color=INK["grid"], lw=0.8, zorder=0)
+            guide = np.array([220.0, 3200.0])
+            ax.plot(guide, noise_per_K * guide, color=INK["muted"], lw=0.6, ls=(0, (1.2, 1.6)), zorder=1)
+            for m in models:
+                sub = [r for r in mine if r["model"] == m]
+                ax.plot(
+                    values(sub, "T_mean_K"),
+                    np.abs(values(sub, "drift_meV_per_atom_ps")),
+                    markers[m],
+                    color=color(m),
+                    ms=3.2,
+                    mew=edges[m],
+                    alpha=0.8,
+                    zorder=3 if m == "ours" else 2,
+                )
+            ax.text(1950, 0.038, worst, fontsize=5.4, color=INK["muted"], ha="center", va="center")
+            ax.set_xscale("log")
+            ax.set_yscale("log")
+            ax.set_xlim(*guide)
+            ax.set_ylim(4e-7, 0.07)
+            ax.set_xticks([300, 500, 1000, 2000], ["300", "500", "1,000", "2,000"])
+            ax.minorticks_off()
+            ax.set_xlabel("Mean temperature, second half of the run (K)")
+            ax.set_title(dtype, loc="left", pad=4)
+            letter(ax, "ab"[i], x=-0.02 if i else -0.2)
+        axes[0].set_ylabel("|total-energy drift| (meV atom$^{-1}$ ps$^{-1}$)")
+        axes[0].text(
+            3050, 4.2e-4, "3σ of the fit (typical)", fontsize=5.4, color=INK["muted"], ha="right", va="center"
+        )
+        axes[1].text(
+            0.97,
+            0.05,
+            "grey lines: nominal\nstart, 300 and\n1,000 K",
+            transform=axes[1].transAxes,
+            fontsize=5.4,
+            color=INK["muted"],
+            ha="right",
+            va="bottom",
+        )
+        fig.legend(
+            handles=[
+                Line2D(
+                    [],
+                    [],
+                    ls="none",
+                    marker=markers[m],
+                    color=color(m),
+                    ms=3.5,
+                    mew=edges[m],
+                    label=MODELS[m]["label"],
+                )
+                for m in reversed(models)
+            ],
+            loc="upper center",
+            bbox_to_anchor=(0.55, 1.01),
+            ncol=3,
+            fontsize=5.6,
+            handletextpad=0.2,
+            columnspacing=1.2,
+        )
+        fig.subplots_adjust(left=0.11, right=0.99, top=0.85, bottom=0.14, wspace=0.08)
+        save(fig, out, "nve_drift")
+
+
 # ------------------------------------------------------------------------ CLI
 def add_arguments(p: argparse.ArgumentParser) -> None:
     p.add_argument("--results", default="results")

@@ -117,6 +117,58 @@ def test_batched_equals_single(model, val40):
     torch.testing.assert_close(out["forces"][a0 : a0 + a1], single1["forces"], rtol=1e-10, atol=1e-12)
 
 
+@pytest.mark.parametrize("reps", [(2, 1, 1), (2, 2, 2)])
+def test_energy_is_extensive_under_supercells(model, val40, reps):
+    pos, z, cell = _frame(val40, 6)
+    shifts = np.array([[i, j, k] for i in range(reps[0]) for j in range(reps[1]) for k in range(reps[2])])
+    n = len(shifts)
+    # the same tiling as ase.Atoms.repeat: every copy of the cell in turn
+    big_pos = np.concatenate([pos + s @ cell for s in shifts])
+    big_cell = cell * np.array(reps)[:, None]
+    a = model(_single(pos, z, cell), compute_stress=True)
+    b = model(_single(big_pos, np.tile(z, n), big_cell), compute_stress=True)
+    torch.testing.assert_close(b["energy"], n * a["energy"], rtol=1e-10, atol=1e-10)
+    torch.testing.assert_close(b["forces"], a["forces"].repeat(n, 1), rtol=1e-9, atol=1e-10)
+    torch.testing.assert_close(b["stress"], a["stress"], rtol=1e-9, atol=1e-11)
+
+
+@pytest.mark.parametrize("periodic", [True, False])
+def test_forces_sum_to_zero(model, val40, periodic):
+    pos, z, cell = _frame(val40, 9)
+    pbc = (True, True, True) if periodic else (False, False, False)
+    f = model(_single(pos, z, cell, pbc=pbc))["forces"]
+    assert f.abs().max() > 1e-3  # a real test, not a trivially zero force field
+    torch.testing.assert_close(f.sum(dim=0), torch.zeros(3, dtype=f.dtype), rtol=0, atol=1e-11)
+
+
+def _dimer(model, r, z=(8, 26)):
+    box = np.eye(3) * 30.0
+    pos = np.array([[10.0, 10.0, 10.0], [10.0 + r, 10.0, 10.0]])
+    return model(_single(pos, np.array(z), box, pbc=(False, False, False)))
+
+
+def test_atoms_beyond_the_cutoff_do_not_interact(model):
+    """Locality: past r_max the energy is the sum of the isolated atoms', with no force."""
+    iso = sum(_dimer(model, 25.0, z=(zz, zz))["energy"].item() / 2 for zz in (8, 26))
+    for r in (R_MAX + 1e-6, R_MAX + 0.5, 12.0):
+        out = _dimer(model, r)
+        assert out["energy"].item() == pytest.approx(iso, rel=0, abs=1e-12)
+        assert out["forces"].abs().max().item() == 0.0
+
+
+def test_energy_and_forces_go_smoothly_to_zero_at_the_cutoff(model):
+    """No step in E or F as the pair distance crosses r_max (the radial cutoff envelope)."""
+    far = _dimer(model, R_MAX + 1e-6)["energy"].item()
+    near = _dimer(model, R_MAX - 1e-6)
+    assert near["energy"].item() == pytest.approx(far, rel=0, abs=1e-12)
+    assert near["forces"].abs().max().item() < 1e-9
+    # and nothing jumps on the way in: a fine scan has no step larger than its neighbours'
+    r = np.linspace(R_MAX - 1.0, R_MAX, 401)
+    e = np.array([_dimer(model, x)["energy"].item() for x in r])
+    steps = np.abs(np.diff(e))
+    assert steps.max() <= 2 * np.median(steps[:50]) + 1e-12
+
+
 @pytest.mark.parametrize("z", [57, 84, 92, 118])
 def test_elements_outside_the_table_raise_cleanly(model, z):
     """Lanthanides map to -1 inside the table; Z >= 84 lies past the largest supported
