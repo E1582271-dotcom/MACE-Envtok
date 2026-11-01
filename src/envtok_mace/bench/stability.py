@@ -20,17 +20,15 @@ truncated (still running when the wall-clock budget ran out), missing.
 from __future__ import annotations
 
 import argparse
-import os
 import re
-import signal
 import time
 import traceback
-from contextlib import contextmanager
 from pathlib import Path
 
 import numpy as np
 
 from ..data.constants import Z_TABLE
+from ._runner import Timeout, failure, placement, wall_timeout
 
 ALLOWED_Z = frozenset(Z_TABLE)
 SURVIVED = 0.999  # normalized final step of a finished run (~0.9996)
@@ -71,26 +69,6 @@ def traj_path(out: Path, label: str, idx: int, atoms) -> Path:
 
 
 # ----------------------------------------------------------------------- running
-class _Timeout(Exception):
-    pass
-
-
-@contextmanager
-def wall_timeout(seconds: float):
-    """SIGALRM guard: interrupts the MD loop between steps after ``seconds``."""
-
-    def handler(signum, frame):
-        raise _Timeout(f"run timed out after {seconds:g} s")
-
-    old = signal.signal(signal.SIGALRM, handler)
-    signal.setitimer(signal.ITIMER_REAL, seconds)
-    try:
-        yield
-    finally:
-        signal.setitimer(signal.ITIMER_REAL, 0)
-        signal.signal(signal.SIGALRM, old)
-
-
 def run_one(
     idx: int,
     atoms,
@@ -131,18 +109,12 @@ def run_one(
                 MD.fn(**kw)
             finished = True
             break
-        except _Timeout:
+        except Timeout:
             last = "timeout"
         except Exception:
             tb = traceback.format_exc()
             (out / f".failed_{path.stem}.txt").write_text(tb)
-            if "CUDA error" in tb:
-                # A device fault (e.g. an illegal memory access) leaves this process's
-                # CUDA context unusable, so every later run here would fail at once.
-                # It says nothing about the model: leave the run unfinished for a rerun
-                # and stop this rank.
-                raise SystemExit(f"CUDA device error in {path.name}; rank stopped, rerun needed") from None
-            last = "oom" if "out of memory" in tb.lower() else "crash"
+            last = failure(tb, path.name)
         finally:
             try:
                 import torch
@@ -161,14 +133,7 @@ def run_one(
 def run_benchmark(args: argparse.Namespace) -> None:
     from ..eval.ase_calc import EnvTokCalculator
 
-    rank = int(os.environ.get("RANK", 0))
-    world = int(os.environ.get("WORLD_SIZE", 1))
-    local = int(os.environ.get("LOCAL_RANK", 0))
-    device = args.device
-    if device == "cuda":
-        import torch
-
-        device = f"cuda:{local % max(torch.cuda.device_count(), 1)}"
+    rank, world, device = placement(args.device)
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
     work = npt_worklist(load_rm24(args.db), args.n_npt)

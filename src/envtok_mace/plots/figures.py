@@ -9,12 +9,12 @@ a 300 dpi PNG. Colours, markers, sizes and fonts come from ``plots.style``.
 from __future__ import annotations
 
 import argparse
-import csv
-import json
 from pathlib import Path
 
 import numpy as np
 
+from ..analysis.results_io import MODELS as NAMES
+from ..analysis.results_io import SEEDS, SPEED_MATCHED, load, read_csv, read_json
 from .style import (
     DOUBLE_COLUMN_IN,
     EDGE_PT,
@@ -27,7 +27,6 @@ from .style import (
     style,
 )
 
-SEEDS = ("rdm1", "rdm2", "rdm3", "rdm4")
 COMPARED = ("ours", "authors_envtok", "authors_direct", "random")
 FIGURES: dict[str, callable] = {}
 
@@ -38,15 +37,6 @@ def figure(fn):
 
 
 # --------------------------------------------------------------------- helpers
-def _json(path: Path) -> dict:
-    return json.loads(path.read_text())
-
-
-def _csv(path: Path) -> list[dict]:
-    with path.open() as fh:
-        return list(csv.DictReader(fh))
-
-
 def mark(ax, x, y, model, ms=5.5, z=3, **kw):
     spec = MODELS[model]
     ax.plot(
@@ -176,24 +166,19 @@ def save(fig, out: Path, name: str) -> None:
 # ------------------------------------------------------------------- the data
 def benchmark_panels(results: Path) -> list[tuple]:
     """(distance class, test, metric, {model: value}) for the six headline numbers."""
-    val = _json(results / "eval/val90_heldout_all.json")["results"]
-    val.update(_json(results / "eval/val90_heldout_omat0.json")["results"])
-    mp = _json(results / "matpes/tables/matpes_tables.json")["metrics"]["f_mae_comp"]["domains"]
-    mc = _json(results / "matcalc/matcalc_summary.json")["quantities"]
-    st = _json(results / "stability/stability_summary.json")
-    nb = _json(results / "nebdft2k/nebdft2k_summary.json")
-    names = ("ours", "authors_envtok", "authors_direct", "mace_omat0", *SEEDS)
-    val_key = {"ours": "ours_envtok", **{s: f"authors_{s}" for s in SEEDS}}
+    r = load(results)
+    val, mc, st, nb = r["val"], r["matcalc"], r["stability"], r["neb"]
+    mp = r["matpes"]["f_mae_comp"]["domains"]
 
     def per(get):
-        return {n: get(n) for n in names}
+        return {n: get(n) for n in NAMES}
 
     return [
         (
             "ID",
             "OMat24 validation",
             "Force MAE (meV Å$^{-1}$)",
-            per(lambda n: val[val_key.get(n, n)]["force_mae_meV_per_A"]),
+            per(lambda n: val[n]["force_mae_meV_per_A"]),
         ),
         (
             "SHIFT",
@@ -217,11 +202,7 @@ def benchmark_panels(results: Path) -> list[tuple]:
             "OOD",
             "MD stability, 80 NPT runs",
             "Runs physically diverged (%)",
-            per(
-                lambda n: 100
-                * st["ours@speed_of_authors_envtok" if n == "ours" else n]["n_diverged"]
-                / st[n]["n_runs"]
-            ),
+            per(lambda n: 100 * st[SPEED_MATCHED if n == "ours" else n]["n_diverged"] / st[n]["n_runs"]),
         ),
         (
             "OOD",
@@ -333,7 +314,7 @@ def training(results: Path, out: Path) -> None:
     """Did training converge, and where did it stop?"""
     import matplotlib.pyplot as plt
 
-    rows = _csv(results / "runs/envtok_8gpu/epochs.csv")
+    rows = read_csv(results / "runs/envtok_8gpu/epochs.csv")
     ep = np.array([int(r["epoch"]) for r in rows])
     keep = ep >= 0
     ep = ep[keep]
@@ -342,7 +323,7 @@ def training(results: Path, out: Path) -> None:
     lr = np.array([float(r["lr"]) for r in rows])[keep]
     loss = np.array([float(r["loss"]) for r in rows])[keep]
     best = int(ep[np.argmin(loss)])
-    ref = _json(results / "eval/val10_authors_envtok.json")["results"]["authors_envtok"]
+    ref = read_json(results / "eval/val10_authors_envtok.json")["results"]["authors_envtok"]
     with style():
         fig, axes = plt.subplots(
             3,
@@ -414,7 +395,7 @@ def scaling(results: Path, out: Path) -> None:
     """How well does training scale from 1 to 8 GPUs spread over separate nodes?"""
     import matplotlib.pyplot as plt
 
-    pts = _json(results / "benchmarks/pilot_8gpu_scattered.json")["scaling_steady_state"]
+    pts = read_json(results / "benchmarks/pilot_8gpu_scattered.json")["scaling_steady_state"]
     g = np.array([p["gpus"] for p in pts])
     thr = np.array([p["structures_per_s"] for p in pts])
     with style():
@@ -460,7 +441,7 @@ def matpes_tail(results: Path, out: Path) -> None:
     """How heavy is the tail of the force-error distribution, and which models blow up?"""
     import matplotlib.pyplot as plt
 
-    rows = _csv(results / "matpes/tables/f_mae_comp_exceedance.csv")
+    rows = read_csv(results / "matpes/tables/f_mae_comp_exceedance.csv")
     with style():
         fig, axes = plt.subplots(1, 2, figsize=(DOUBLE_COLUMN_IN, 2.6), sharey=True)
         for i, (ax, dom, title) in enumerate(
@@ -522,7 +503,7 @@ def md_divergence(results: Path, out: Path) -> None:
     """When do the MD runs blow up as temperature and pressure rise?"""
     import matplotlib.pyplot as plt
 
-    rows = _csv(results / "stability/stability_runs.csv")
+    rows = read_csv(results / "stability/stability_runs.csv")
     t = np.linspace(0, 10, 501)
 
     def curve(model):
@@ -548,7 +529,7 @@ def md_divergence(results: Path, out: Path) -> None:
         for m, key in (
             ("authors_direct", "authors_direct"),
             ("authors_envtok", "authors_envtok"),
-            ("ours", "ours@speed_of_authors_envtok"),
+            ("ours", SPEED_MATCHED),
         ):
             c, n, total = curve(key)
             ax.step(t, c, where="post", color=color(m), lw=1.25, zorder=3)
@@ -602,7 +583,7 @@ def latent_distance(results: Path, out: Path) -> None:
     with style():
         fig, axes = plt.subplots(2, 2, figsize=(DOUBLE_COLUMN_IN, 3.9), sharex=True)
         for col, model in enumerate(("ours", "authors_envtok")):
-            d = _json(results / f"latent/latent_{model}.json")
+            d = read_json(results / f"latent/latent_{model}.json")
             x = np.arange(1, 11)
             handles = []
             for key, name, kind in sets:
@@ -655,8 +636,8 @@ def neb_parity(results: Path, out: Path) -> None:
     """Are the predicted Li-ion migration barriers biased against DFT?"""
     import matplotlib.pyplot as plt
 
-    rows = [r for r in _csv(results / "nebdft2k/nebdft2k_hops.csv") if r["kept_ours"] == "True"]
-    nb = _json(results / "nebdft2k/nebdft2k_summary.json")
+    rows = [r for r in read_csv(results / "nebdft2k/nebdft2k_hops.csv") if r["kept_ours"] == "True"]
+    nb = read_json(results / "nebdft2k/nebdft2k_summary.json")
     with style():
         fig, axes = plt.subplots(1, 2, figsize=(ONE_HALF_COLUMN_IN, 2.75))
         for i, (ax, with_u, title) in enumerate(

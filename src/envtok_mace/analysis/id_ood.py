@@ -16,17 +16,13 @@ from __future__ import annotations
 
 import argparse
 import csv
-import json
 from pathlib import Path
 
 import numpy as np
 
+from .results_io import SEEDS, SPEED_MATCHED, load
+
 COLUMNS = ("ours", "authors_envtok", "authors_direct", "random", "mace_omat0")
-SEEDS = ("rdm1", "rdm2", "rdm3", "rdm4")
-
-
-def _load(path: Path) -> dict:
-    return json.loads(path.read_text())
 
 
 def rows_from_results(results: Path) -> list[dict]:
@@ -44,26 +40,21 @@ def rows_from_results(results: Path) -> list[dict]:
             }
         )
 
+    r = load(results)
+
     # ---- ID: OMat24 validation (held-out 90 %)
-    val = _load(results / "eval/val90_heldout_all.json")["results"]
-    val.update(_load(results / "eval/val90_heldout_omat0.json")["results"])
-    name = {
-        "ours": "ours_envtok",
-        "authors_envtok": "authors_envtok",
-        "authors_direct": "authors_direct",
-        "mace_omat0": "mace_omat0",
-    }
+    val = r["val"]
     for key, metric, unit in (
         ("energy_mae_meV_per_atom", "energy MAE", "meV/atom"),
         ("force_mae_meV_per_A", "force MAE", "meV/A"),
         ("stress_mae_meV_per_A3", "stress MAE", "meV/A^3"),
     ):
-        v = {c: val[n][key] for c, n in name.items()}
-        v["random"] = float(np.mean([val[f"authors_{s}"][key] for s in SEEDS]))
+        v = {c: val[c][key] for c in ("ours", "authors_envtok", "authors_direct", "mace_omat0")}
+        v["random"] = float(np.mean([val[s][key] for s in SEEDS]))
         add("ID", "OMat24 validation (591,981 frames)", metric, unit, "lower", v)
 
     # ---- MatPES: bulk = dataset shift, non-bulk = OOD
-    mp = _load(results / "matpes/tables/matpes_tables.json")["metrics"]["f_mae_comp"]["domains"]
+    mp = r["matpes"]["f_mae_comp"]["domains"]
     for dom, cat, test in (
         ("bulk", "shift", "MatPES bulk (242,319)"),
         ("non_bulk", "OOD", "MatPES non-bulk (80,766)"),
@@ -78,7 +69,7 @@ def rows_from_results(results: Path) -> list[dict]:
             add(cat, test, metric, "meV/A", "lower", v)
 
     # ---- MatCalc: near-equilibrium properties = shift, high-energy states = OOD
-    mc = _load(results / "matcalc/matcalc_summary.json")["quantities"]
+    mc = r["matcalc"]
     for key, stat, cat, test, metric, unit, better, scale in (
         ("eform", "mean", "shift", "MatCalc WBM (474)", "formation energy MAE", "meV/atom", "lower", 1e3),
         (
@@ -126,8 +117,8 @@ def rows_from_results(results: Path) -> list[dict]:
         add(cat, test, metric, unit, better, {c: scale * m[c][stat] for c in COLUMNS})
 
     # ---- MD stability (OOD): the authors' runs at their own speed, ours at theirs
-    st = _load(results / "stability/stability_summary.json")
-    ours = st["ours@speed_of_authors_envtok"]
+    st = r["stability"]
+    ours = st[SPEED_MATCHED]
     for key, metric, unit, better in (
         ("mean_completion_pct", "mean completion", "%", "higher"),
         ("phys_div", "physically diverged runs", "% of runs", "lower"),
@@ -142,7 +133,7 @@ def rows_from_results(results: Path) -> list[dict]:
         add("OOD", "MD, NPT 300-3000 K, 0-500 GPa (80 runs)", metric, unit, better, v)
 
     # ---- NEB transition states (OOD)
-    nb = _load(results / "nebdft2k/nebdft2k_summary.json")
+    nb = r["neb"]
     for split, metric in (
         ("without_U", "barrier MAE, hosts without Hubbard U"),
         ("with_U", "barrier MAE, hosts with Hubbard U"),

@@ -16,6 +16,19 @@ All notable changes to this project are recorded here. The format follows
   `results/eval/val10_authors_envtok.json`. It keeps only the authors' model,
   which is the reference line in the training figure. The entry for a
   mid-training checkpoint of ours is dropped; the training curve has every epoch.
+- The ID/OOD table and the figures read the benchmark summaries through one
+  loader (`analysis/results_io.py`) that maps the models' names in the different
+  files to one set. The table and every figure are byte-identical to before.
+- MatCalc, nebDFT2k and MD stability share their rank placement, wall-clock
+  timeout, failure handling and worker spawning (`bench/_runner.py`). Sharding
+  and scoring are unchanged.
+
+### Fixed
+
+- `results/matpes/tables/matpes_tables.json` labelled its values meV although
+  they are in eV; the labels now say eV. The values and the meV CSV tables are
+  unchanged.
+- `docs/NSCC.md` gave CUDA builds that `setup_env.sh` no longer offers.
 
 ### Removed
 

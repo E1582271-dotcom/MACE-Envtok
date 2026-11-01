@@ -127,6 +127,18 @@ def test_tables_use_the_reference_domains_and_atom_weights():
     assert out["metrics"]["f_mae_comp"]["domains"]["non_bulk"]["n"] == 1
 
 
+def test_table_units_name_the_stored_values(tmp_path):
+    runs = {"ours": {"sid": np.array(["a"]), "natoms": np.array([2]), "f_mae_comp": np.array([0.11])}}
+    out = bench.tables(runs, np.array(["bulk"]))
+    bench.write_tables(out, tmp_path)
+    saved = json.loads((tmp_path / "matpes_tables.json").read_text())["metrics"]["f_mae_comp"]
+    assert saved["unit"] == "eV/A"
+    assert saved["domains"]["bulk"]["estimators"]["median"]["ours"] == pytest.approx(0.11)
+    lines = (tmp_path / "f_mae_comp_bulk.csv").read_text().splitlines()
+    assert "in meV/A" in lines[0]
+    assert lines[-1].endswith("110")  # the CSVs are scaled to meV
+
+
 def test_paper_domains_relabel_by_dimensionality_only():
     """Fragmented but 3D-periodic cells count as bulk; overcompressed keeps its label."""
     run = {

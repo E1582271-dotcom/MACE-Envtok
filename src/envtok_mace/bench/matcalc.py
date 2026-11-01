@@ -21,14 +21,13 @@ from __future__ import annotations
 
 import argparse
 import json
-import multiprocessing as mp
-import os
 import time
 from pathlib import Path
 
 import numpy as np
 
 from ..data.constants import Z_TABLE
+from ._runner import placement, spawn
 
 ALLOWED_Z = frozenset(Z_TABLE)
 BENCHES = ("Equilibrium", "Elasticity", "Phonon", "Softening")
@@ -255,14 +254,7 @@ def _run_shard(
 
 
 def run_benchmarks(args: argparse.Namespace) -> None:
-    rank = int(os.environ.get("RANK", 0))
-    world = int(os.environ.get("WORLD_SIZE", 1))
-    local = int(os.environ.get("LOCAL_RANK", 0))
-    device = args.device
-    if device == "cuda":
-        import torch
-
-        device = f"cuda:{local % max(torch.cuda.device_count(), 1)}"
+    rank, world, device = placement(args.device)
     k = args.workers
     count = world * k
     Path(args.out).mkdir(parents=True, exist_ok=True)
@@ -286,15 +278,7 @@ def run_benchmarks(args: argparse.Namespace) -> None:
     if k == 1:
         _run_shard(*jobs[0])
         return
-    ctx = mp.get_context("spawn")
-    procs = [ctx.Process(target=_run_shard, args=j) for j in jobs]
-    for p in procs:
-        p.start()
-    for p in procs:
-        p.join()
-    bad = [p.exitcode for p in procs if p.exitcode != 0]
-    if bad:
-        raise SystemExit(f"{len(bad)} of {k} workers failed (exit codes {bad})")
+    spawn(_run_shard, jobs)
 
 
 # --------------------------------------------------------------- merge / score

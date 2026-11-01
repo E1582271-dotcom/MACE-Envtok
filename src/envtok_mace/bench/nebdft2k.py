@@ -19,15 +19,14 @@ from __future__ import annotations
 import argparse
 import json
 import os
-import signal
 import time
 import traceback
-from contextlib import contextmanager
 from pathlib import Path
 
 import numpy as np
 
 from ..data.constants import Z_TABLE
+from ._runner import Timeout, failure, placement, spawn, wall_timeout
 
 ALLOWED_Z = frozenset(Z_TABLE)
 DATASET = "nebDFT2k"
@@ -55,24 +54,6 @@ def worklist(cache: str | Path) -> list[dict]:
     idx = load_index(DATASET, str(cache))
     idx = idx[~idx["chemsys"].map(_unsupported)]
     return idx.to_dict("records")
-
-
-class _Timeout(Exception):
-    pass
-
-
-@contextmanager
-def wall_timeout(seconds: float):
-    def handler(signum, frame):
-        raise _Timeout(f"hop timed out after {seconds:g} s")
-
-    old = signal.signal(signal.SIGALRM, handler)
-    signal.setitimer(signal.ITIMER_REAL, seconds)
-    try:
-        yield
-    finally:
-        signal.setitimer(signal.ITIMER_REAL, 0)
-        signal.signal(signal.SIGALRM, old)
 
 
 def relax_band(images, calcs, fmax: float = 0.05, steps: int = 10_000, k: float = 5.0) -> dict:
@@ -119,7 +100,7 @@ def run_hop(row: dict, calcs, cache: Path, out: Path, label: str, timeout: float
     result, last = None, None
     for _ in range(attempts):  # a NEB cannot resume, so every attempt starts afresh
         try:
-            with wall_timeout(timeout):
+            with wall_timeout(timeout, "hop"):
                 images = [im.copy() for im in init]
                 diag = relax_band(images, calcs[: len(images)])
                 result = {
@@ -130,14 +111,12 @@ def run_hop(row: dict, calcs, cache: Path, out: Path, label: str, timeout: float
                     "natoms": len(images[0]),
                 }
             break
-        except _Timeout:
+        except Timeout:
             last = "timeout"
         except Exception:
             tb = traceback.format_exc()
             (out / f".failed_{path.stem}.txt").write_text(tb)
-            if "CUDA error" in tb:  # device fault: this process can no longer use the GPU
-                raise SystemExit(f"CUDA device error in {edge}; worker stopped, rerun needed") from None
-            last = "oom" if "out of memory" in tb.lower() else "crash"
+            last = failure(tb, edge)
     done.write_text("done\n")
     if result is None:
         return last or "crash"
@@ -152,14 +131,7 @@ def run_hop(row: dict, calcs, cache: Path, out: Path, label: str, timeout: float
 
 
 def run_benchmark(args: argparse.Namespace) -> None:
-    rank = int(os.environ.get("RANK", 0))
-    world = int(os.environ.get("WORLD_SIZE", 1))
-    local = int(os.environ.get("LOCAL_RANK", 0))
-    device = args.device
-    if device == "cuda":
-        import torch
-
-        device = f"cuda:{local % max(torch.cuda.device_count(), 1)}"
+    rank, world, device = placement(args.device)
     out, cache = Path(args.out), Path(args.cache)
     out.mkdir(parents=True, exist_ok=True)
     work = worklist(cache)
@@ -172,14 +144,8 @@ def run_benchmark(args: argparse.Namespace) -> None:
     if k == 1:
         _run_shard(args, device, out, cache, work, *shards[0])
         return
-    import multiprocessing as mp
-
-    ctx = mp.get_context("spawn")
-    procs = [ctx.Process(target=_run_shard, args=(args, device, out, cache, work, i, n)) for i, n in shards]
-    for p in procs:
-        p.start()
-    for p in procs:
-        p.join()
+    # exit codes are not checked: a worker stopped by a CUDA fault leaves its hops for the rerun
+    spawn(_run_shard, [(args, device, out, cache, work, i, n) for i, n in shards], check=False)
 
 
 def _run_shard(args, device, out, cache, work, index, count) -> None:

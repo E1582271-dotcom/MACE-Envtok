@@ -13,7 +13,7 @@
  "n_structures": 323096,
  "metrics": {
   "f_mae_comp": {
-   "unit": "meV/A",
+   "unit": "eV/A",
    "domains": {
     "all": {
      "n": 323096,
@@ -350,7 +350,7 @@
    }
   },
   "f_rmse_comp": {
-   "unit": "meV/A",
+   "unit": "eV/A",
    "domains": {
     "all": {
      "n": 323096,
@@ -687,7 +687,7 @@
    }
   },
   "f_max_norm": {
-   "unit": "meV/A",
+   "unit": "eV/A",
    "domains": {
     "all": {
      "n": 323096,
@@ -1024,7 +1024,7 @@
    }
   },
   "abs_d_energy_per_atom": {
-   "unit": "meV/atom",
+   "unit": "eV/atom",
    "domains": {
     "all": {
      "n": 323096,
@@ -1361,7 +1361,7 @@
    }
   },
   "s_mae_voigt6": {
-   "unit": "meV/A^3",
+   "unit": "eV/A^3",
    "domains": {
     "all": {
      "n": 323096,
@@ -1698,7 +1698,7 @@
    }
   },
   "s_err_norm": {
-   "unit": "meV/A^3",
+   "unit": "eV/A^3",
    "domains": {
     "all": {
      "n": 323096,

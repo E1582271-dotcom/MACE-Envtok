@@ -260,7 +260,8 @@ def tables(runs: dict[str, dict], domain: np.ndarray) -> dict:
     for key, wcol, unit in QUANTITIES:
         if not all(key in runs[L] for L in labels):
             continue
-        out["metrics"][key] = {"unit": unit, "domains": {}}
+        # the per-structure files hold eV; ``unit`` names the meV scale of the published tables
+        out["metrics"][key] = {"unit": unit.removeprefix("m"), "domains": {}}
         for dk, m in masks.items():
             vw = [
                 (
@@ -279,6 +280,9 @@ def tables(runs: dict[str, dict], domain: np.ndarray) -> dict:
 
 def write_tables(result: dict, out_dir: str | Path, scale: float = 1e3) -> None:
     """One CSV per quantity and domain (values scaled to meV like the paper's)."""
+    if scale not in (1.0, 1e3):
+        raise ValueError("scale must be 1 (eV) or 1e3 (meV)")
+    prefix = "m" if scale == 1e3 else ""
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     labels = result["labels"]
@@ -287,8 +291,9 @@ def write_tables(result: dict, out_dir: str | Path, scale: float = 1e3) -> None:
             path = out_dir / f"{key}_{dk}.csv"
             with path.open("w", newline="") as fh:
                 w = csv.writer(fh, lineterminator="\n")
-                w.writerow([f"# {key} over domain {dk}, in {meta['unit']}"])
-                w.writerow([f"# {dom['n']} structures, winsor cap {scale * dom['cap']:.6g} {meta['unit']}"])
+                unit = prefix + meta["unit"]
+                w.writerow([f"# {key} over domain {dk}, in {unit}"])
+                w.writerow([f"# {dom['n']} structures, winsor cap {scale * dom['cap']:.6g} {unit}"])
                 w.writerow(["estimator"] + labels)
                 for name, vals in dom["estimators"].items():
                     w.writerow([name] + [f"{scale * vals[L]:.6g}" for L in labels])
