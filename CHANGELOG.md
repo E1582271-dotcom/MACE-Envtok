@@ -6,7 +6,22 @@ All notable changes to this project are recorded here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- `envtok-mace learning-curves` reduces the trainer's step log to a per-epoch
+  training loss. It also collects the evaluations of the checkpoints archived
+  every 25 epochs on fixed training and held-out subsets, so the training figure
+  can show train against validation loss, and train/validation/test errors
+  against epoch.
+
 ### Changed
+
+- The training figure has five panels: loss, force, energy and stress MAE, and
+  the learning rate. Each panel shows the training, validation and held-out
+  test sets: the training loss comes from the step log, and the training- and
+  test-set errors from the 27 archived checkpoints
+  (`results/runs/envtok_8gpu/train_loss.csv`, `checkpoints.csv`). The
+  validation loss and stress MAE were logged before but not drawn.
 
 - The README and the test skip message say how to enable the ten tests that are
   skipped by default: the authors' models from Zenodo and the `bench` extra.
