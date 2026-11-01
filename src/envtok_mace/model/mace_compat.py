@@ -1,8 +1,9 @@
 """Bridge to the reference mace-torch implementation.
 
 Used to (1) load published mace-torch models (e.g. the authors' EnvTok model)
-into this implementation and (2) build randomly initialised mace-torch models
-with the same architecture for parity tests. mace-torch is never used for training.
+into this implementation, (2) build randomly initialised mace-torch models with
+the same architecture for parity tests, and (3) write our models as mace-torch
+models, for MACECalculator and LAMMPS. mace-torch is never used for training.
 """
 
 from __future__ import annotations
@@ -168,6 +169,37 @@ def build_reference_mace(cfg: MACEConfig, avg_num_neighbors: float = 40.0):
         atomic_inter_scale=cfg.scale,
         atomic_inter_shift=cfg.shift,
     )
+
+
+def to_mace(model: MACE):
+    """The reverse of ``from_mace``: a mace-torch model with the weights and constants of ``model``.
+
+    The model must use the e3nn backend, whose tensors are mace-torch's; ``load_model`` converts."""
+    if model.config.backend != "e3nn":
+        raise ValueError(f"to_mace needs the e3nn backend, not {model.config.backend}")
+    dtype = next(model.parameters()).dtype
+    old = torch.get_default_dtype()
+    torch.set_default_dtype(dtype)  # so the constants that are not copied are built at this precision
+    try:
+        ref = build_reference_mace(model.config)
+    finally:
+        torch.set_default_dtype(old)
+    ours, theirs = dict(model.named_parameters()), dict(ref.named_parameters())
+    mapping = _weight_map(model)
+    unmapped = set(theirs) - set(mapping.values())
+    if unmapped:
+        raise KeyError(f"mace-torch parameters without a counterpart here: {sorted(unmapped)}")
+    with torch.no_grad():
+        for name, ref_name in mapping.items():
+            if ours[name].shape != theirs[ref_name].shape:
+                raise ValueError(
+                    f"{name}: shape {tuple(ours[name].shape)} vs {ref_name} {tuple(theirs[ref_name].shape)}"
+                )
+            theirs[ref_name].copy_(ours[name])
+        our_bufs, ref_bufs = dict(model.named_buffers()), dict(ref.named_buffers())
+        for name, ref_name in _buffer_map(model, ref).items():
+            ref_bufs[ref_name].copy_(our_bufs[name].reshape(ref_bufs[ref_name].shape))
+    return ref.eval()
 
 
 def mace_input_dict(batch, ref) -> dict[str, torch.Tensor]:

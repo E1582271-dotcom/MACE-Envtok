@@ -42,6 +42,16 @@ All notable changes to this project are recorded here. The format follows
   the same three models. Runs start at a nominal 300 and 1000 K and are shown at
   their measured temperature, because some structures heat up well above their
   start in all three models.
+- **`envtok-mace export-mace`** writes a model as a mace-torch file, which works
+  with `MACECalculator` and compiles for LAMMPS without this package. In float64
+  it agrees with this package to 1e-13 eV/Å once the rounding of the ZBL exponents
+  in a float32-trained model is removed, and to 7e-7 eV/Å with it.
+- **Inference speed** (`bench-speed --mode infer`, `scripts/nscc/bench_infer.pbs`,
+  `results/benchmarks/inference_*.jsonl`, figure `inference_speed`): the time and
+  memory of one calculator call from 4 to 23,328 atoms, on an A100 with either
+  backend and on 16 CPU cores, in float32 and float64.
+- **Model card** (`docs/MODEL_CARD.md`): training data, level of theory, intended
+  use, limits, accuracy and speed.
 - **Physics tests:** extensivity under supercells, forces summing to zero,
   locality beyond the cutoff, and smoothness as a pair crosses the cutoff.
 
