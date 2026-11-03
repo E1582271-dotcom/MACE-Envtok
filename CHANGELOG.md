@@ -42,6 +42,14 @@ All notable changes to this project are recorded here. The format follows
   the same three models. Runs start at a nominal 300 and 1000 K and are shown at
   their measured temperature, because some structures heat up well above their
   start in all three models.
+- **Phonons and thermal conductivity** (`envtok-mace kappa`,
+  `scripts/nscc/kappa_forces.pbs` and `kappa_conductivity.pbs`, `results/kappa/`,
+  figure `kappa`). Matbench Discovery's κ_SRME protocol on its 103 phononDB-PBE
+  binaries with phono3py 4.1.0, for this work, the authors' EnvTok model,
+  MACE-OMAT-0 and MACE-MPA-0. Forces run on a GPU and the Wigner transport
+  equation on CPU cores. Each structure also gets ω_max and the heat capacity,
+  free energy and entropy at 300 K against the DFT phonons. MACE-MPA-0 reproduces
+  its published κ_SRME (0.4131 against 0.4123), κ_SRE (0.2048) and failure rate (0).
 - **`envtok-mace export-mace`** writes a model as a mace-torch file, which works
   with `MACECalculator` and compiles for LAMMPS without this package. In float64
   it agrees with this package to 1e-13 eV/Å once the rounding of the ZBL exponents
