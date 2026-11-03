@@ -1,0 +1,33 @@
+#!/bin/bash
+# Li diffusion in solid electrolytes: NVT MD of every model, material and temperature,
+# spread over 8 GPUs from any nodes with several workers per GPU, float32 and cueq.
+# Finished runs are skipped when the job is run again, except those that ran out of memory.
+# Write the structures on a machine with MP_API_KEY and copy them over first:
+#   envtok-mace diffusion --fetch structures.extxyz
+#   qsub -P <project> -v MODELS="best.pt a.model b.model",LABELS="ours authors_envtok mace_omat0",\
+#       STRUCTURES=<extxyz> scripts/nscc/diffusion_8gpu.pbs
+#PBS -N envtok-diff
+#PBS -q normal
+#PBS -l select=8:ngpus=1:ncpus=16:mem=110gb:mpiprocs=1
+#PBS -l place=free
+#PBS -l walltime=12:00:00
+#PBS -j oe
+set -euo pipefail
+cd "${PBS_O_WORKDIR:-$PWD}"
+. scripts/nscc/env.sh
+. scripts/nscc/ranks_env.sh
+: "${MODELS:?}" "${LABELS:?}" "${STRUCTURES:?}"
+ranks_layout
+OUT=${OUT:-$ENVTOK_SCRATCH/diffusion_runs}
+WORKERS=${WORKERS:-3}
+export OMP_NUM_THREADS=$((16 / WORKERS))
+export RANK_LOG=$ENVTOK_SCRATCH/runs/logs/${PBS_JOBID%%.*}
+mkdir -p "$(dirname "$RANK_LOG")" "$OUT"
+read -r -a models <<< "$MODELS"
+read -r -a labels <<< "$LABELS"
+echo "job $PBS_JOBID: $NRANKS GPUs on $RANK_NNODES node(s); per-node output: $RANK_LOG.<host>.log"
+
+run_ranks envtok-mace diffusion --models "${models[@]}" --labels "${labels[@]}" --out "$OUT" \
+    --structures "$STRUCTURES" --device cuda --workers "$WORKERS" --threads "$OMP_NUM_THREADS" \
+    --backend "${BACKEND:-cueq}" ${EXTRA_ARGS:-} || true
+envtok-mace diffusion --summary --labels "${labels[@]}" --out "$OUT" --tables "$OUT/tables"

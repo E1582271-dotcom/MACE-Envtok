@@ -30,11 +30,14 @@ class EnvTokCalculator(Calculator):
         device: str | torch.device = "cpu",
         dtype: torch.dtype | str = torch.float64,
         backend: str | None = None,
+        stress: bool = True,
         **kwargs,
     ):
         """``model``: a MACE instance, or a path accepted by ``eval.run_eval.load_model``
-        (our checkpoints or a released mace-torch .model)."""
+        (our checkpoints or a released mace-torch .model). ``stress=False`` skips the
+        stress, which MD at a fixed cell does not need."""
         super().__init__(**kwargs)
+        self.stress = stress
         self.device = torch.device(device)
         self.dtype = getattr(torch, dtype) if isinstance(dtype, str) else dtype
         if isinstance(model, (str, bytes)) or hasattr(model, "__fspath__"):
@@ -66,7 +69,7 @@ class EnvTokCalculator(Calculator):
         super().calculate(atoms, properties, system_changes)
         # Stress costs one extra gradient, so it is always returned for a periodic
         # cell: ASE optimisers with a cell filter ask for it right after the forces.
-        want_stress = bool(self.atoms.pbc.all()) and self.atoms.cell.rank == 3
+        want_stress = self.stress and bool(self.atoms.pbc.all()) and self.atoms.cell.rank == 3
         out = self.model(
             self._batch(self.atoms), compute_force=True, compute_stress=want_stress, training=False
         )
