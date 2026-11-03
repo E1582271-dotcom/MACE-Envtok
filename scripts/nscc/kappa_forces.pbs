@@ -1,0 +1,24 @@
+#!/bin/bash
+# Force stage of the phononDB-PBE benchmark on one GPU, shared by several workers: relaxation
+# and displaced supercells. Finished structures are skipped when the job is run again, except
+# those that ran out of GPU memory: in float64 the dense light-element cells (BN, BeO) need the
+# whole GPU, so run them again with WORKERS=1.
+# Stage the two phononDB-PBE files from Matbench Discovery on the login node first.
+#   qsub -P <project> -v MODELS="best.pt a.model",LABELS="ours x",STRUCTURES=<extxyz> \
+#       scripts/nscc/kappa_forces.pbs
+#PBS -N envtok-kappa-f
+#PBS -q normal
+#PBS -l select=1:ncpus=16:ngpus=1:mem=110gb
+#PBS -l walltime=08:00:00
+#PBS -j oe
+set -euo pipefail
+cd "${PBS_O_WORKDIR:-$PWD}"
+. scripts/nscc/env.sh
+: "${MODELS:?}" "${LABELS:?}" "${STRUCTURES:?}"
+OUT=${OUT:-$ENVTOK_SCRATCH/kappa_runs}
+export OMP_NUM_THREADS=4
+read -r -a models <<< "$MODELS"
+read -r -a labels <<< "$LABELS"
+
+envtok-mace kappa --stage forces --models "${models[@]}" --labels "${labels[@]}" --out "$OUT" \
+    --structures "$STRUCTURES" --device cuda --workers "${WORKERS:-4}" --threads 4 ${EXTRA_ARGS:-}

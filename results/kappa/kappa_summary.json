@@ -1,0 +1,70 @@
+{
+ "labels": [
+  "ours",
+  "authors_envtok",
+  "mace_omat0",
+  "mace_mpa0"
+ ],
+ "models": {
+  "ours": {
+   "n_structures": 103,
+   "kappa_srme": 0.38075629933755123,
+   "kappa_sre": 0.20087202922133296,
+   "kappa_srd": -0.03475664936054501,
+   "kappa_failure_rate": 0.009708737864077669,
+   "imaginary_rate": 0.009708737864077669,
+   "broken_symmetry": 0,
+   "n_failed": 0,
+   "n_stable": 102,
+   "omega_max_THz_mae": 0.6161092723127046,
+   "cv_J_per_K_mol_mae": 0.12345326395154273,
+   "f_kJ_per_mol_mae": 0.25294182177098795,
+   "s_J_per_K_mol_mae": 0.64102268477372
+  },
+  "authors_envtok": {
+   "n_structures": 103,
+   "kappa_srme": 0.40461017253336273,
+   "kappa_sre": 0.2215752641098392,
+   "kappa_srd": -0.055541613599720006,
+   "kappa_failure_rate": 0.0,
+   "imaginary_rate": 0.0,
+   "broken_symmetry": 0,
+   "n_failed": 0,
+   "n_stable": 103,
+   "omega_max_THz_mae": 0.6775163938154137,
+   "cv_J_per_K_mol_mae": 0.14807284944787258,
+   "f_kJ_per_mol_mae": 0.31654068887485726,
+   "s_J_per_K_mol_mae": 0.8053333207722851
+  },
+  "mace_omat0": {
+   "n_structures": 103,
+   "kappa_srme": 0.2478956743675987,
+   "kappa_sre": 0.12657370144331087,
+   "kappa_srd": -0.04940662440987958,
+   "kappa_failure_rate": 0.0,
+   "imaginary_rate": 0.0,
+   "broken_symmetry": 0,
+   "n_failed": 0,
+   "n_stable": 103,
+   "omega_max_THz_mae": 0.3149074860871161,
+   "cv_J_per_K_mol_mae": 0.06639174157944164,
+   "f_kJ_per_mol_mae": 0.1251132758465953,
+   "s_J_per_K_mol_mae": 0.3046668611040294
+  },
+  "mace_mpa0": {
+   "n_structures": 103,
+   "kappa_srme": 0.4130965935695033,
+   "kappa_sre": 0.20480918676512094,
+   "kappa_srd": -0.10933145389052529,
+   "kappa_failure_rate": 0.0,
+   "imaginary_rate": 0.0,
+   "broken_symmetry": 0,
+   "n_failed": 0,
+   "n_stable": 103,
+   "omega_max_THz_mae": 0.8331742972267576,
+   "cv_J_per_K_mol_mae": 0.2763805277359259,
+   "f_kJ_per_mol_mae": 0.37803400016952765,
+   "s_J_per_K_mol_mae": 0.8415699293244877
+  }
+ }
+}

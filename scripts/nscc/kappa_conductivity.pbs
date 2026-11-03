@@ -1,0 +1,24 @@
+#!/bin/bash
+# Conductivity stage of the phononDB-PBE benchmark on one CPU node, from the saved forces.
+# Finished structures are skipped when the job is run again.
+#   qsub -P <project> -v LABELS="ours x",STRUCTURES=<extxyz>,REFERENCE=<json.gz> \
+#       scripts/nscc/kappa_conductivity.pbs
+#PBS -N envtok-kappa-c
+#PBS -q normal
+#PBS -l select=1:ncpus=64:mem=220gb
+#PBS -l walltime=12:00:00
+#PBS -j oe
+set -euo pipefail
+cd "${PBS_O_WORKDIR:-$PWD}"
+. scripts/nscc/env.sh
+: "${LABELS:?}" "${STRUCTURES:?}" "${REFERENCE:?}"
+OUT=${OUT:-$ENVTOK_SCRATCH/kappa_runs}
+WORKERS=${WORKERS:-4}
+THREADS=${THREADS:-16}
+export OMP_NUM_THREADS=$THREADS
+read -r -a labels <<< "$LABELS"
+
+envtok-mace kappa --stage conductivity --labels "${labels[@]}" --out "$OUT" \
+    --structures "$STRUCTURES" --workers "$WORKERS" --threads "$THREADS" ${EXTRA_ARGS:-}
+envtok-mace kappa --summary --labels "${labels[@]}" --out "$OUT" --reference "$REFERENCE" \
+    --tables "$OUT/tables"

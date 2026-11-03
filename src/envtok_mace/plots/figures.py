@@ -1352,6 +1352,96 @@ def nve_drift(results: Path, out: Path) -> None:
         save(fig, out, "nve_drift")
 
 
+# ------------------------------------------------------------- material properties
+@figure
+def kappa(results: Path, out: Path) -> None:
+    """How close to DFT is the lattice thermal conductivity of the phononDB-PBE binaries?"""
+    import matplotlib.pyplot as plt
+    from matplotlib.lines import Line2D
+
+    summary = read_json(results / "kappa/kappa_summary.json")
+    rows = read_csv(results / "kappa/kappa_structures.csv")
+    names = {"ours": "this work", "authors_envtok": "authors' EnvTok", "mace_omat0": "MACE-OMAT-0"}
+    markers = {m: MODELS[m]["marker"] or "x" for m in names}
+    low, high = 0.2, 3000.0
+    with style():
+        fig, axes = plt.subplots(1, 4, figsize=(DOUBLE_COLUMN_IN, 2.1))
+        for ax in axes:
+            ax.set_box_aspect(1)
+        for ax, (m, name), tag in zip(axes, names.items(), "abc"):
+            mine = [r for r in rows if r["model"] == m and r["kappa_W_per_mK"]]
+            x = np.array([float(r["kappa_dft"]) for r in mine])
+            y = np.array([float(r["kappa_W_per_mK"]) for r in mine])
+            ax.plot([low, high], [low, high], color=INK["muted"], lw=0.6, zorder=1)
+            ax.plot(x, y, markers[m], color=color(m), ms=2.6, mew=0.7 if markers[m] == "x" else 0, alpha=0.8)
+            ax.set_xscale("log")
+            ax.set_yscale("log")
+            ax.set_xlim(low, high)
+            ax.set_ylim(low, high)
+            ticks = [1, 10, 100, 1000]
+            ax.set_xticks(ticks, ["1", "10", "100", "1,000"])
+            ax.set_yticks(ticks, ["1", "10", "100", "1,000"])
+            ax.minorticks_off()
+            ax.set_xlabel("κ, DFT (W m$^{-1}$ K$^{-1}$)")
+            ax.set_ylabel(f"κ, {name}")
+            s = summary["models"][m]
+            ax.text(
+                0.05,
+                0.95,
+                f"κ$_\\mathrm{{SRME}}$ {s['kappa_srme']:.3f}\nκ$_\\mathrm{{SRE}}$ {s['kappa_sre']:.3f}\n"
+                f"shown {len(mine)} of {s['n_structures']}",
+                transform=ax.transAxes,
+                va="top",
+                fontsize=5.5,
+            )
+            letter(ax, tag, x=-0.2)
+
+        ax = axes[3]
+        for m in names:
+            srme = np.sort([float(r["srme"]) for r in rows if r["model"] == m])
+            share = np.arange(1, len(srme) + 1) / len(srme)
+            ax.step(
+                srme, share, where="post", color=line_color(m), lw=1.0, ls=MODELS[m].get("linestyle", "-")
+            )
+        ax.set_xlim(0, 2.05)
+        ax.set_ylim(0, 1.02)
+        ax.set_xlabel("κ$_\\mathrm{SRME}$ of one structure")
+        ax.set_ylabel("Share of structures")
+        # a structure with imaginary modes, a broken symmetry or a failed run has no κ and scores 2
+        censored = [
+            f"{r['formula']}, {names[r['model']]}"
+            for r in rows
+            if r["model"] in names and r["censored"] == "True"
+        ]
+        if censored:
+            note = "no κ, scored 2:\n" + "\n".join(censored)
+            ax.text(1.97, 0.93, note, fontsize=5.4, color=INK["muted"], ha="right", va="top")
+        letter(ax, "d", x=-0.2)
+        fig.legend(
+            handles=[
+                Line2D(
+                    [],
+                    [],
+                    color=line_color(m),
+                    lw=0.9,
+                    ls=MODELS[m].get("linestyle", "-"),
+                    marker=markers[m],
+                    ms=3.2,
+                    mew=0.7 if markers[m] == "x" else 0,
+                    label=MODELS[m]["label"],
+                )
+                for m in names
+            ],
+            loc="upper center",
+            bbox_to_anchor=(0.5, 1.01),
+            ncol=3,
+            fontsize=5.8,
+            columnspacing=1.4,
+        )
+        fig.subplots_adjust(left=0.065, right=0.99, top=0.86, bottom=0.18, wspace=0.42)
+        save(fig, out, "kappa")
+
+
 # ------------------------------------------------------------------- engineering
 @figure
 def inference_speed(results: Path, out: Path) -> None:
