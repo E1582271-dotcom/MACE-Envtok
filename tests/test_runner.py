@@ -32,8 +32,12 @@ def test_wall_timeout_interrupts_and_disarms():
 def test_failures_are_classified_from_the_traceback():
     assert _runner.failure("RuntimeError: CUDA out of memory. Tried to allocate", "x") == "oom"
     assert _runner.failure("ValueError: bad cell", "x") == "crash"
-    with pytest.raises(SystemExit, match="CUDA device error in run_7"):
-        _runner.failure("RuntimeError: CUDA error: an illegal memory access was encountered", "run_7")
+    with pytest.raises(SystemExit, match="CUDA device error in run_7 .*illegal memory access"):
+        _runner.failure(
+            "RuntimeError: CUDA error: an illegal memory access was encountered\n"
+            "CUDA kernel errors might be asynchronously reported",
+            "run_7",
+        )
 
 
 def _exit_with(code):

@@ -53,7 +53,8 @@ def failure(tb: str, what: str) -> str:
     fail at once: the process stops instead and the item stays open for a rerun.
     """
     if "CUDA error" in tb:
-        raise SystemExit(f"CUDA device error in {what}; process stopped, rerun needed")
+        error = next(line for line in reversed(tb.strip().splitlines()) if "CUDA error" in line)
+        raise SystemExit(f"CUDA device error in {what} ({error.strip()}); process stopped, rerun needed")
     return "oom" if "out of memory" in tb.lower() else "crash"
 
 

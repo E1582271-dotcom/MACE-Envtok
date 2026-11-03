@@ -93,6 +93,11 @@ All notable changes to this project are recorded here. The format follows
   they are in eV; the labels now say eV. The values and the meV CSV tables are
   unchanged.
 - `docs/NSCC.md` gave CUDA builds that `setup_env.sh` no longer offers.
+- With the cuEquivariance backend, the ASE calculator failed with an illegal
+  memory access on any GPU but the first, because the kernels launch on the
+  current GPU. It now makes its own GPU current around loading and every call.
+  A benchmark worker that hits a device fault stops without writing a result, so
+  no earlier number is affected. Its message now includes the CUDA error.
 
 ### Removed
 
