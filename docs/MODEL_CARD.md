@@ -83,6 +83,21 @@ and the other subset models.
 | | Median shear modulus error | −4.9 % | +1.4 % |
 | nebDFT2k (1,656 Li hops) | Barrier MAE, hosts without U, eV | 0.138 | 0.146 |
 | | Barrier MAE, hosts with U, eV | 0.259 | 0.270 |
+| phononDB-PBE (103 binaries) | κ_SRME at 300 K (lower is better) | 0.381 | 0.248 |
+| | Highest phonon frequency MAE, THz | 0.62 | 0.31 |
+
+Li-ion diffusion was run in five solid electrolytes. Three of them have AIMD
+values in the same structure:
+
+| Electrolyte | This work | MACE-OMAT-0 | AIMD |
+|---|---|---|---|
+| LGPS | 0.193 eV | 0.149 eV | 0.21 eV |
+| Li7P3S11 | 0.166 eV | 0.171 eV | 0.187 eV |
+| β-Li3PS4 | 0.266 eV | 0.286 eV | 0.49 eV (500–650 K) |
+
+These activation energies are fitted over the usable runs between 500 and 900 K.
+They are predictions, compared with AIMD rather than experiment. The README gives
+the caveats.
 
 Force error varies by element, from 29 meV/Å for Na to 281 meV/Å for C. Predicted Li
 barriers in hosts with U run high (median +83 meV), as expected from the mismatch: the
