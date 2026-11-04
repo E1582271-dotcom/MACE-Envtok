@@ -56,36 +56,41 @@
  {
   "model": "ours",
   "id": "Li7P3S11",
-  "n_runs": 4,
+  "n_runs": 6,
   "n_failed": 0,
   "n_not_diffusive": 0,
   "n_framework_flows": 2,
   "temperatures_fitted_K": [
+   500.0,
+   550.0,
    600.0,
    700.0
   ],
-  "Ea_eV": null,
-  "Ea_err_eV": null,
-  "D300_cm2_s": null,
-  "sigma300_mS_cm": null
+  "Ea_eV": 0.16612094832020613,
+  "Ea_err_eV": 0.01785582163541159,
+  "D300_cm2_s": 7.535868585199025e-07,
+  "sigma300_mS_cm": 74.57500235174794
  },
  {
   "model": "ours",
   "id": "beta-Li3PS4",
-  "n_runs": 4,
+  "n_runs": 7,
   "n_failed": 0,
   "n_not_diffusive": 0,
   "n_framework_flows": 0,
   "temperatures_fitted_K": [
+   500.0,
+   550.0,
    600.0,
+   650.0,
    700.0,
    800.0,
    900.0
   ],
-  "Ea_eV": 0.263696176197248,
-  "Ea_err_eV": 0.0006318779428480679,
-  "D300_cm2_s": 6.652222496977649e-08,
-  "sigma300_mS_cm": 7.6703998578269275
+  "Ea_eV": 0.2664020363881282,
+  "Ea_err_eV": 0.005958785314199608,
+  "D300_cm2_s": 6.170817632937256e-08,
+  "sigma300_mS_cm": 7.115312020285371
  },
  {
   "model": "authors_envtok",
@@ -144,38 +149,43 @@
  {
   "model": "authors_envtok",
   "id": "Li7P3S11",
-  "n_runs": 4,
+  "n_runs": 6,
   "n_failed": 0,
   "n_not_diffusive": 0,
   "n_framework_flows": 0,
   "temperatures_fitted_K": [
+   500.0,
+   550.0,
    600.0,
    700.0,
    800.0,
    900.0
   ],
-  "Ea_eV": 0.19098819976391945,
-  "Ea_err_eV": 0.013907474671133216,
-  "D300_cm2_s": 4.4901832588562074e-07,
-  "sigma300_mS_cm": 44.434881434458724
+  "Ea_eV": 0.17437765508494713,
+  "Ea_err_eV": 0.012175421051486678,
+  "D300_cm2_s": 6.595339631198848e-07,
+  "sigma300_mS_cm": 65.26752197792482
  },
  {
   "model": "authors_envtok",
   "id": "beta-Li3PS4",
-  "n_runs": 4,
+  "n_runs": 7,
   "n_failed": 0,
   "n_not_diffusive": 0,
   "n_framework_flows": 0,
   "temperatures_fitted_K": [
+   500.0,
+   550.0,
    600.0,
+   650.0,
    700.0,
    800.0,
    900.0
   ],
-  "Ea_eV": 0.17800472208758972,
-  "Ea_err_eV": 0.004740110807588464,
-  "D300_cm2_s": 4.81028139920868e-07,
-  "sigma300_mS_cm": 55.46534526973707
+  "Ea_eV": 0.21365850885413465,
+  "Ea_err_eV": 0.012545286711068089,
+  "D300_cm2_s": 2.0248919220648743e-07,
+  "sigma300_mS_cm": 23.348182833899422
  },
  {
   "model": "mace_omat0",
@@ -234,37 +244,42 @@
  {
   "model": "mace_omat0",
   "id": "Li7P3S11",
-  "n_runs": 4,
+  "n_runs": 6,
   "n_failed": 0,
   "n_not_diffusive": 0,
   "n_framework_flows": 0,
   "temperatures_fitted_K": [
+   500.0,
+   550.0,
    600.0,
    700.0,
    800.0,
    900.0
   ],
-  "Ea_eV": 0.1755711589580531,
-  "Ea_err_eV": 0.021217269167714315,
-  "D300_cm2_s": 5.954800813993961e-07,
-  "sigma300_mS_cm": 58.9287458621549
+  "Ea_eV": 0.1707536540263811,
+  "Ea_err_eV": 0.008298049114605523,
+  "D300_cm2_s": 6.675736509524875e-07,
+  "sigma300_mS_cm": 66.06312998547584
  },
  {
   "model": "mace_omat0",
   "id": "beta-Li3PS4",
-  "n_runs": 4,
+  "n_runs": 7,
   "n_failed": 0,
   "n_not_diffusive": 0,
   "n_framework_flows": 0,
   "temperatures_fitted_K": [
+   500.0,
+   550.0,
    600.0,
+   650.0,
    700.0,
    800.0,
    900.0
   ],
-  "Ea_eV": 0.22739643533833645,
-  "Ea_err_eV": 0.017187308159317405,
-  "D300_cm2_s": 1.4079622385118796e-07,
-  "sigma300_mS_cm": 16.23462438157154
+  "Ea_eV": 0.2861205096564405,
+  "Ea_err_eV": 0.02594203168921519,
+  "D300_cm2_s": 3.700564111636734e-08,
+  "sigma300_mS_cm": 4.266965882255758
  }
 ]
