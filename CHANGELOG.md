@@ -57,20 +57,26 @@ All notable changes to this project are recorded here. The format follows
   - Setup: the ordered Materials Project structures, as 351 to 540 atoms, at
     fixed cell. NVT MD at 600, 700, 800 and 900 K, with 10 ps equilibration and
     100 ps production.
+  - Added after those runs: 500 and 550 K for Li7P3S11, so that this work has
+    three usable temperatures, and 500, 550 and 650 K for β-Li3PS4, to cover the
+    AIMD window.
   - Analysis: D comes from the Li mean squared displacement, and Ea from an
-    Arrhenius fit. σ at 300 K is extrapolated with Nernst–Einstein, taking a
-    Haven ratio of 1.
-  - All 60 runs finished without divergence.
-  - Two electrolytes have AIMD values for the same structure; DOIs are in
-    `literature_aimd.csv`. For Li7P3S11 the fitted Ea is 0.191 eV (authors) and
-    0.176 eV (MACE-OMAT-0), against 0.187 eV from AIMD. For LGPS it is 0.193 eV
-    (this work), 0.162 eV and 0.149 eV, against 0.21 ± 0.04 eV.
-  - This work has no Ea for Li7P3S11. At 800 and 900 K its PS4 and P2S7 units
-    rotate, while P stays on its sites with four S. The framework criterion,
-    fixed before the runs (non-Li MSD above 1.5 Å²), counts this as flow, which
-    leaves two temperatures.
-  - The β-Li3PS4 and Li3InCl6 references used other structures, so they are not
-    comparable.
+    Arrhenius fit over every usable temperature. σ at 300 K is extrapolated with
+    Nernst–Einstein, taking a Haven ratio of 1.
+  - All 75 runs finished without divergence.
+  - Three electrolytes have AIMD values for the same structure; DOIs are in
+    `literature_aimd.csv`. For LGPS the fitted Ea is 0.193 eV (this work),
+    0.162 eV (authors) and 0.149 eV (MACE-OMAT-0), against 0.21 ± 0.04 eV. For
+    Li7P3S11 it is 0.166, 0.174 and 0.171 eV, against 0.187 eV.
+  - For β-Li3PS4, AIMD gives 0.49 ± 0.02 eV from 500 to 650 K. Fitted over the
+    same temperatures, the models give 0.257, 0.220 and 0.391 eV, and over 500
+    to 900 K, 0.266, 0.214 and 0.286 eV.
+  - This work's Li7P3S11 fit leaves out 800 and 900 K. There its PS4 and P2S7
+    units rotate, while P stays on its sites with four S. The framework
+    criterion, fixed before the runs (non-Li MSD above 1.5 Å²), counts this as
+    flow.
+  - The Li3InCl6 references used a C2/m cell, and the Materials Project cell is
+    C2, so they are not comparable.
 - **`envtok-mace export-mace`** writes a model as a mace-torch file, which works
   with `MACECalculator` and compiles for LAMMPS without this package. In float64
   it agrees with this package to 1e-13 eV/Å once the rounding of the ZBL exponents

@@ -1468,6 +1468,9 @@ def li_diffusion(results: Path, out: Path) -> None:
     offsets = dict(zip(models, (-0.3, -0.15, 0.0)))
     plotted = [float(r["D_cm2_s"]) for r in runs if not r.get("error") and float(r["D_cm2_s"]) > 0]
     decades = range(int(np.floor(np.log10(min(plotted)))), int(np.ceil(np.log10(max(plotted)))) + 1)
+    inverse = 1000 / np.array([float(r["temperature_K"]) for r in runs])
+    xlim = (inverse.min() - 0.06, inverse.max() + 0.06)
+    xticks = np.arange(1.2, xlim[1], 0.4 if np.ptp(inverse) > 0.6 else 0.2)
     with style():
         fig = plt.figure(figsize=(DOUBLE_COLUMN_IN, 4.2))
         outer = fig.add_gridspec(2, 1, hspace=0.55)
@@ -1517,8 +1520,8 @@ def li_diffusion(results: Path, out: Path) -> None:
             ax.set_ylim(10.0 ** decades[0], 10.0 ** decades[-1])
             ax.set_yticks([10.0**d for d in decades], [f"10$^{{{d}}}$" for d in decades])
             ax.minorticks_off()
-            ax.set_xlim(1.05, 1.73)
-            ax.set_xticks([1.2, 1.4, 1.6])
+            ax.set_xlim(*xlim)
+            ax.set_xticks(xticks, [f"{t:.1f}" for t in xticks])
             ax.set_xlabel("1,000/T (K$^{-1}$)")
             ax.set_title(label, loc="left", pad=4)
             letter(ax, "abcde"[i], x=-0.3 if i == 0 else -0.06)
