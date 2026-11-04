@@ -1,0 +1,35 @@
+#!/bin/bash
+# WBM relaxations against the DFT geometry: every model on every structure of the set,
+# spread over 8 GPUs from any nodes with several workers per GPU, then the RMSDs on the
+# CPU cores. Finished structures are skipped when the job is run again, except those that
+# ran out of memory. Write the set on any machine and copy it over first:
+#   envtok-mace wbm --prepare wbm_set --initial <initial.zip> --relaxed <relaxed.zip>
+#   qsub -P <project> -v MODELS="best.pt a.model b.model",LABELS="ours authors_envtok mace_omat0",\
+#       STRUCTURES=<wbm_set> scripts/nscc/wbm_8gpu.pbs
+# PUBLISHED="label=analysis.csv.gz" compares a model with its published RMSDs.
+#PBS -N envtok-wbm
+#PBS -q normal
+#PBS -l select=8:ngpus=1:ncpus=16:mem=110gb:mpiprocs=1
+#PBS -l place=free
+#PBS -l walltime=12:00:00
+#PBS -j oe
+set -euo pipefail
+cd "${PBS_O_WORKDIR:-$PWD}"
+. scripts/nscc/env.sh
+. scripts/nscc/ranks_env.sh
+: "${MODELS:?}" "${LABELS:?}" "${STRUCTURES:?}"
+ranks_layout
+OUT=${OUT:-$ENVTOK_SCRATCH/wbm_runs}
+WORKERS=${WORKERS:-4}
+export OMP_NUM_THREADS=$((16 / WORKERS))
+export RANK_LOG=$ENVTOK_SCRATCH/runs/logs/${PBS_JOBID%%.*}
+mkdir -p "$(dirname "$RANK_LOG")" "$OUT"
+read -r -a models <<< "$MODELS"
+read -r -a labels <<< "$LABELS"
+echo "job $PBS_JOBID: $NRANKS GPUs on $RANK_NNODES node(s); per-node output: $RANK_LOG.<host>.log"
+
+run_ranks envtok-mace wbm --models "${models[@]}" --labels "${labels[@]}" --out "$OUT" \
+    --structures "$STRUCTURES" --device cuda --workers "$WORKERS" --threads "$OMP_NUM_THREADS" \
+    --backend "${BACKEND:-cueq}" ${EXTRA_ARGS:-} || true
+envtok-mace wbm --summary --labels "${labels[@]}" --out "$OUT" --structures "$STRUCTURES" \
+    --tables "$OUT/tables" --workers 16 ${PUBLISHED:+--published $PUBLISHED} ${SUMMARY_ARGS:-}
