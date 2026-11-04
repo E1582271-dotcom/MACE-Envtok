@@ -19,6 +19,7 @@ COMMANDS = {
     "eos": ("envtok_mace.bench.eos", "MLIP-Arena equation of state on WBM structures"),
     "nve": ("envtok_mace.bench.nve", "total-energy drift in NVE molecular dynamics"),
     "kappa": ("envtok_mace.bench.kappa", "phonons and thermal conductivity of the phononDB-PBE binaries"),
+    "diffusion": ("envtok_mace.bench.diffusion", "Li-ion diffusion in solid electrolytes from NVT MD"),
     "latent": ("envtok_mace.analysis.latent", "latent-space distance from the training data vs force error"),
     "id-ood": ("envtok_mace.analysis.id_ood", "one table of all benchmarks grouped ID / shift / OOD"),
     "learning-curves": ("envtok_mace.analysis.learning", "train vs val loss, and errors per epoch"),

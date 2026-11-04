@@ -51,3 +51,18 @@ def test_rebuilds_the_graph_after_a_move(val40, calc):
     assert atoms.get_potential_energy() != pytest.approx(e0, rel=1e-9)
     atoms.set_cell(atoms.cell * 1.02, scale_atoms=True)
     assert np.isfinite(atoms.get_stress()).all()
+
+
+def test_without_stress_and_with_unwrapped_positions_nothing_else_changes(val40, envtok_model_path):
+    """MD at a fixed cell skips the stress, and its atoms may leave the cell."""
+    plain = EnvTokCalculator(envtok_model_path, device="cpu", dtype=torch.float64, stress=False)
+    full = EnvTokCalculator(envtok_model_path, device="cpu", dtype=torch.float64)
+    atoms = val40.to_atoms(2)
+    atoms.calc = full
+    e, f = atoms.get_potential_energy(), atoms.get_forces()
+    moved = atoms.copy()
+    moved.positions[0] += moved.cell[0] - 2 * moved.cell[2]  # the same crystal
+    moved.calc = plain
+    assert moved.get_potential_energy() == pytest.approx(e, rel=1e-12)
+    assert np.allclose(moved.get_forces(), f, rtol=1e-10, atol=1e-12)
+    assert "stress" not in plain.results

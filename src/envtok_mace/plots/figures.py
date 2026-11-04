@@ -1442,6 +1442,201 @@ def kappa(results: Path, out: Path) -> None:
         save(fig, out, "kappa")
 
 
+ELECTROLYTES = {
+    "LGPS": "Li$_{10}$GeP$_2$S$_{12}$",
+    "Li7P3S11": "Li$_7$P$_3$S$_{11}$",
+    "beta-Li3PS4": "β-Li$_3$PS$_4$",
+    "Li6PS5Cl": "Li$_6$PS$_5$Cl",
+    "Li3InCl6": "Li$_3$InCl$_6$",
+}
+KB_EV = 8.617333262e-5
+
+
+@figure
+def li_diffusion(results: Path, out: Path) -> None:
+    """How fast does Li move in five solid electrolytes, and how close is that to AIMD?"""
+    import matplotlib.pyplot as plt
+    from matplotlib.lines import Line2D
+
+    runs = read_csv(results / "diffusion/diffusion_runs.csv")
+    summary = {(s["model"], s["id"]): s for s in read_json(results / "diffusion/diffusion_summary.json")}
+    literature = read_csv(results / "diffusion/literature_aimd.csv")
+    names = {"ours": "this work", "authors_envtok": "authors' EnvTok", "mace_omat0": "MACE-OMAT-0"}
+    models = tuple(names)
+    markers = {m: MODELS[m]["marker"] or "x" for m in models}
+    edges = {m: 0.7 if markers[m] == "x" else 0 for m in models}
+    offsets = dict(zip(models, (-0.3, -0.15, 0.0)))
+    plotted = [float(r["D_cm2_s"]) for r in runs if not r.get("error") and float(r["D_cm2_s"]) > 0]
+    decades = range(int(np.floor(np.log10(min(plotted)))), int(np.ceil(np.log10(max(plotted)))) + 1)
+    with style():
+        fig = plt.figure(figsize=(DOUBLE_COLUMN_IN, 4.2))
+        outer = fig.add_gridspec(2, 1, hspace=0.55)
+        top = outer[0].subgridspec(1, 5, wspace=0.12).subplots(sharey=True)
+        bottom = outer[1].subgridspec(1, 2, wspace=0.3).subplots()
+
+        for i, (ax, (name, label)) in enumerate(zip(top, ELECTROLYTES.items())):
+            notes = [
+                f"{names[r['model']]}, {float(r['temperature_K']):.0f} K: {r['error']}"
+                for r in runs
+                if r["id"] == name and r.get("error")
+            ] + [
+                f"{names[m]}: no fit, {len(s['temperatures_fitted_K'])} usable T"
+                for m in models
+                if (s := summary.get((m, name))) and s["Ea_eV"] is None
+            ]
+            if notes:
+                ax.text(
+                    0.04, 0.04, "\n".join(notes), transform=ax.transAxes, fontsize=5.4, color=INK["muted"]
+                )
+            for m in models:
+                mine = [r for r in runs if (r["model"], r["id"]) == (m, name) and not r.get("error")]
+                t = np.array([float(r["temperature_K"]) for r in mine])
+                d = np.array([float(r["D_cm2_s"]) for r in mine])
+                used = np.array([r["diffusive"] == "True" and r["framework_flows"] == "False" for r in mine])
+                spec = dict(color=color(m), ms=3.4, mew=edges[m], zorder=3)
+                ax.errorbar(
+                    1000 / t[used],
+                    d[used],
+                    yerr=np.array([float(r["D_err_cm2_s"]) for r in mine])[used],
+                    fmt=markers[m],
+                    elinewidth=0.6,
+                    capsize=0,
+                    **spec,
+                )
+                # runs left out of the fit: Li barely moved or the framework flowed
+                shown = ~used & (d > 0)
+                ax.plot(
+                    1000 / t[shown], d[shown], markers[m], mfc="none", mec=color(m), **{**spec, "mew": 0.7}
+                )
+                s = summary.get((m, name))
+                if s and s["Ea_eV"] is not None:
+                    tt = np.linspace(min(s["temperatures_fitted_K"]), max(s["temperatures_fitted_K"]), 20)
+                    fit = s["D300_cm2_s"] * np.exp(-s["Ea_eV"] / KB_EV * (1 / tt - 1 / 300))
+                    ax.plot(1000 / tt, fit, color=line_color(m), lw=0.8, ls=MODELS[m].get("linestyle", "-"))
+            ax.set_yscale("log")
+            ax.set_ylim(10.0 ** decades[0], 10.0 ** decades[-1])
+            ax.set_yticks([10.0**d for d in decades], [f"10$^{{{d}}}$" for d in decades])
+            ax.minorticks_off()
+            ax.set_xlim(1.05, 1.73)
+            ax.set_xticks([1.2, 1.4, 1.6])
+            ax.set_xlabel("1,000/T (K$^{-1}$)")
+            ax.set_title(label, loc="left", pad=4)
+            letter(ax, "abcde"[i], x=-0.3 if i == 0 else -0.06)
+        top[0].set_ylabel("Li D (cm$^2$ s$^{-1}$)")
+
+        sigmas = [s["sigma300_mS_cm"] for s in summary.values() if s["sigma300_mS_cm"] is not None]
+        for ax, key, ylabel in (
+            (bottom[0], "Ea_eV", "Activation energy (eV)"),
+            (bottom[1], "sigma300_mS_cm", "σ at 300 K (mS cm$^{-1}$)"),
+        ):
+            for j, name in enumerate(ELECTROLYTES):
+                for m in models:
+                    s = summary.get((m, name))
+                    if s and s[key] is not None:
+                        err = s["Ea_err_eV"] if key == "Ea_eV" else None
+                        ax.errorbar(
+                            j + offsets[m],
+                            s[key],
+                            yerr=err,
+                            fmt=markers[m],
+                            color=color(m),
+                            ms=3.6,
+                            mew=edges[m],
+                            elinewidth=0.6,
+                            capsize=0,
+                            zorder=3,
+                        )
+                mine = [r for r in literature if r["id"] == name and r[key]]
+                for k, r in enumerate(mine):
+                    value = float(r[key])
+                    if key == "Ea_eV":
+                        err = float(r["Ea_err_eV"]) if r["Ea_err_eV"] else None
+                    elif r["sigma300_low_mS_cm"]:
+                        low, high = float(r["sigma300_low_mS_cm"]), float(r["sigma300_high_mS_cm"])
+                        err = [[value - low], [high - value]]
+                        sigmas += [low, high]
+                    else:
+                        err = None
+                        sigmas.append(value)
+                    same = r["comparable"] == "True"
+                    ax.errorbar(
+                        j + 0.18 + 0.12 * k,
+                        value,
+                        yerr=err,
+                        fmt="D",
+                        color=INK["ink"],
+                        mfc=INK["ink"] if same else "none",
+                        ms=3.0,
+                        mew=0.7,
+                        elinewidth=0.6,
+                        capsize=0,
+                        zorder=3,
+                    )
+            for j in range(len(ELECTROLYTES) - 1):
+                ax.axvline(j + 0.5, color=INK["grid"], lw=0.6, zorder=0)
+            ax.set_xlim(-0.5, len(ELECTROLYTES) - 0.5)
+            ax.set_xticks(range(len(ELECTROLYTES)), list(ELECTROLYTES.values()))
+            ax.tick_params(axis="x", length=0)
+            ax.set_ylabel(ylabel)
+        bottom[1].set_yscale("log")
+        bottom[1].set_ylim(min(sigmas) / 1.6, max(sigmas) * 1.6)
+        ticks = [10.0**d for d in range(-4, 5) if min(sigmas) / 1.6 <= 10.0**d <= max(sigmas) * 1.6]
+        bottom[1].set_yticks(ticks, [f"{t:g}" for t in ticks])
+        bottom[1].minorticks_off()
+        letter(bottom[0], "f", x=-0.1)
+        letter(bottom[1], "g", x=-0.12)
+
+        fig.legend(
+            handles=[
+                Line2D(
+                    [],
+                    [],
+                    color=line_color(m),
+                    lw=0.9,
+                    ls=MODELS[m].get("linestyle", "-"),
+                    marker=markers[m],
+                    ms=3.2,
+                    mew=edges[m],
+                    label=MODELS[m]["label"],
+                )
+                for m in models
+            ]
+            + [
+                Line2D(
+                    [],
+                    [],
+                    ls="none",
+                    marker="o",
+                    mfc="none",
+                    mec=INK["muted"],
+                    ms=3.2,
+                    mew=0.7,
+                    label="left out of the fit",
+                ),
+                Line2D([], [], ls="none", marker="D", color=INK["ink"], ms=3.0, label="AIMD, same structure"),
+                Line2D(
+                    [],
+                    [],
+                    ls="none",
+                    marker="D",
+                    mfc="none",
+                    mec=INK["ink"],
+                    ms=3.0,
+                    mew=0.7,
+                    label="AIMD, other structure",
+                ),
+            ],
+            loc="upper center",
+            bbox_to_anchor=(0.5, 1.01),
+            ncol=6,
+            fontsize=5.6,
+            handletextpad=0.3,
+            columnspacing=1.1,
+        )
+        fig.subplots_adjust(left=0.075, right=0.99, top=0.88, bottom=0.08)
+        save(fig, out, "li_diffusion")
+
+
 # ------------------------------------------------------------------- engineering
 @figure
 def inference_speed(results: Path, out: Path) -> None:

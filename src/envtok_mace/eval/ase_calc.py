@@ -9,6 +9,7 @@ of (1/V) dE/de, positive under tension.
 
 from __future__ import annotations
 
+import contextlib
 from types import SimpleNamespace
 
 import numpy as np
@@ -30,21 +31,30 @@ class EnvTokCalculator(Calculator):
         device: str | torch.device = "cpu",
         dtype: torch.dtype | str = torch.float64,
         backend: str | None = None,
+        stress: bool = True,
         **kwargs,
     ):
         """``model``: a MACE instance, or a path accepted by ``eval.run_eval.load_model``
-        (our checkpoints or a released mace-torch .model)."""
+        (our checkpoints or a released mace-torch .model). ``stress=False`` skips the
+        stress, which MD at a fixed cell does not need."""
         super().__init__(**kwargs)
+        self.stress = stress
         self.device = torch.device(device)
         self.dtype = getattr(torch, dtype) if isinstance(dtype, str) else dtype
-        if isinstance(model, (str, bytes)) or hasattr(model, "__fspath__"):
-            from .run_eval import load_model
+        with self._on_device():
+            if isinstance(model, (str, bytes)) or hasattr(model, "__fspath__"):
+                from .run_eval import load_model
 
-            model = load_model(str(model), self.device, self.dtype, backend)
-        self.model = model.to(device=self.device, dtype=self.dtype).eval()
+                model = load_model(str(model), self.device, self.dtype, backend)
+            self.model = model.to(device=self.device, dtype=self.dtype).eval()
         for p in self.model.parameters():
             p.requires_grad_(False)
         self.r_max = float(self.model.config.r_max)
+
+    def _on_device(self):
+        """Make the model's GPU the current one: cuEquivariance kernels launch on the
+        current GPU whatever their tensors' device, and on another GPU they fault."""
+        return torch.cuda.device(self.device) if self.device.type == "cuda" else contextlib.nullcontext()
 
     def _batch(self, atoms) -> SimpleNamespace:
         pos = atoms.get_positions()
@@ -66,10 +76,11 @@ class EnvTokCalculator(Calculator):
         super().calculate(atoms, properties, system_changes)
         # Stress costs one extra gradient, so it is always returned for a periodic
         # cell: ASE optimisers with a cell filter ask for it right after the forces.
-        want_stress = bool(self.atoms.pbc.all()) and self.atoms.cell.rank == 3
-        out = self.model(
-            self._batch(self.atoms), compute_force=True, compute_stress=want_stress, training=False
-        )
+        want_stress = self.stress and bool(self.atoms.pbc.all()) and self.atoms.cell.rank == 3
+        with self._on_device():
+            out = self.model(
+                self._batch(self.atoms), compute_force=True, compute_stress=want_stress, training=False
+            )
         energy = float(out["energy"].detach().item())
         self.results = {
             "energy": energy,
