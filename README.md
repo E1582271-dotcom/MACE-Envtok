@@ -542,13 +542,16 @@ uv run envtok-mace train --config configs/train/debug_cpu.yaml   # tiny end-to-e
 uv run envtok-mace figures                 # redraw every figure from results/
 ```
 
-Ten tests are skipped until their inputs are present. Eight check our code
-against the authors' released EnvTok model, including the parity with
-mace-torch; two need the benchmark dependencies:
+Seventeen tests are skipped until their inputs are present:
+- eight check our code against the authors' released EnvTok model, including the
+  parity with mace-torch;
+- seven need the benchmark dependencies;
+- two check the mace-torch export of the released weights.
 
 ```bash
 bash scripts/data/download_zenodo.sh local/zenodo models.zip   # the authors' models, 358 MB
 uv sync --extra bench
+gh release download v1.0.0 -p '*.pt' -D local/release/v1.0.0   # the released weights, 35 MB
 ```
 
 The full pipeline runs on a cluster. Each step is a CLI command with a matching

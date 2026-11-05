@@ -119,7 +119,7 @@ All notable changes to this project are recorded here. The format follows
   (`results/runs/envtok_8gpu/train_loss.csv`, `checkpoints.csv`). The
   validation loss and stress MAE were logged before but not drawn.
 
-- The README and the test skip message say how to enable the ten tests that are
+- The README and the test skip message say how to enable the tests that are
   skipped by default: the authors' models from Zenodo and the `bench` extra.
 - The README states the single-GPU training throughput against mace-torch, and
   `docs/BENCHMARKS.md` names the file behind the MD speed-ups.
