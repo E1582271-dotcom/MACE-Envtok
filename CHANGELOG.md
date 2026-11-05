@@ -6,6 +6,8 @@ All notable changes to this project are recorded here. The format follows
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-05
+
 ### Added
 
 - **Per-structure predictions.** `eval --save-predictions DIR` and
@@ -146,6 +148,7 @@ All notable changes to this project are recorded here. The format follows
   - This was also the fault that v1.0.0 hit in one MD rank and two NEB ranks,
     which `docs/BENCHMARKS.md` had put down to a float64 kernel fault. In v1.0.0
     those runs were redone with e3nn, so its numbers stand.
+- `envtok_mace.__version__` said 0.1.0; it now follows the release version.
 
 ### Removed
 
@@ -225,6 +228,7 @@ benchmark of the reproduced paper. Kept private until the 1.0.0 release.
   calculation NaN with phonopy 4.1.0), one worker per GPU against
   out-of-memory failures, and every calculator exception is logged.
 
-[Unreleased]: https://github.com/E1582271-dotcom/MACE-Envtok/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/E1582271-dotcom/MACE-Envtok/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/E1582271-dotcom/MACE-Envtok/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/E1582271-dotcom/MACE-Envtok/releases/tag/v1.0.0
 [0.9.0]: https://github.com/E1582271-dotcom/MACE-Envtok/releases/tag/v0.9.0
