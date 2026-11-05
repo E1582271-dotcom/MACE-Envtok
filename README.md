@@ -42,6 +42,17 @@ distribution (OOD).*
   published results.** Rerunning their models reproduces their per-structure
   values: MatCalc to 2e-10 relative, MatPES per-atom force errors to a median
   of 1.5e-6 eV/Å.
+- **Beyond the paper, the model gets the standard checks of a universal
+  potential**:
+  - accuracy against DFT per structure, element and sub-dataset;
+  - diatomic curves, equations of state and NVE drift;
+  - phonons and thermal conductivity;
+  - relaxations of WBM structures;
+  - Li-ion diffusion in five solid electrolytes.
+
+  Where a published reference model exists, the pipeline reproduces its results
+  first. For example, MACE-MPA-0 gives its published κ_SRME, 0.4131 against
+  0.4123.
 
 Each subset has one training run here and one from the authors. Differences
 between the two EnvTok models are reported, but one run on each side is not
@@ -58,7 +69,13 @@ enough to attribute them.
   - [MD stability](#md-stability)
   - [Li-ion migration barriers](#li-ion-migration-barriers-nebdft2k)
   - [Error and distance from the training data](#error-and-distance-from-the-training-data)
+  - [Physical sanity](#physical-sanity)
+  - [Phonons and thermal conductivity](#phonons-and-thermal-conductivity)
+  - [WBM relaxations](#wbm-relaxations)
+  - [Li-ion diffusion in solid electrolytes](#li-ion-diffusion-in-solid-electrolytes)
 - [Trained model](#trained-model)
+  - [Using the model in mace-torch and LAMMPS](#using-the-model-in-mace-torch-and-lammps)
+  - [Inference speed](#inference-speed)
 - [What is implemented](#what-is-implemented)
 - [Reproduce](#reproduce)
 - [Repository layout](#repository-layout)
@@ -301,6 +318,144 @@ and all benchmarks are collected by distance from the training data in
   <img src="results/figures/latent_distance.svg" width="100%" alt="Share of atoms and median force error against latent-space distance decile, for this work and the authors' EnvTok model">
 </p>
 
+### Physical sanity
+
+Three of MLIP Arena's checks were run on three models: this work, the authors'
+EnvTok model and MACE-OMAT-0. A sensible pair curve or equation of state has one
+well. Unit tests also cover extensivity under supercells, forces summing to zero,
+locality beyond the cutoff and smoothness at the cutoff
+([tests/test_model_physics.py](tests/test_model_physics.py)).
+
+| Check | This work | Authors, EnvTok | MACE-OMAT-0 |
+|---|---|---|---|
+| Homonuclear diatomic curves with one well, of 68 elements | 54 | 39 | 57 |
+| Diatomic wells deeper than 12 eV | H, B, C, F | N, F, Si, P, Cr, Mn | Ar |
+| Equation-of-state curves with one well, of 610 WBM structures | 597 | 593 | 598 |
+| Bulk modulus from those curves, median \|ΔK\| against MACE-OMAT-0 | 3.7 GPa | 3.7 GPa | — |
+
+<p align="center">
+  <img src="results/figures/diatomics.svg" width="100%" alt="Energy of two atoms against distance for 16 elements, for three models">
+</p>
+
+*Two atoms in vacuum, relative to two isolated atoms, for 16 of the 68 elements.
+No homonuclear bond is as strong as 12 eV, so the wells deeper than that in the
+table are curves that collapse at short range. This work's H, C and F curves
+collapse in this figure; so do the authors' N, F, Si, P and Mn. Every element is in
+[results/diatomics/](results/diatomics). The
+[equations of state](results/figures/eos.svg) of the three models overlap. The set
+has no DFT moduli, so the bulk modulus is compared with MACE-OMAT-0.*
+
+NVE molecular dynamics on 20 WBM supercells started at 300 and 1,000 K and ran for
+10 ps, in float32 and float64. The median total-energy drift is about 1e-4
+meV/atom/ps for every model and both precisions, near what the fit can resolve,
+so the drift does not rank the models
+([figure](results/figures/nve_drift.svg)). The largest drifts, 0.02 meV/atom/ps,
+all come from one structure, C27Rb27Ti81. It heats far above its starting
+temperature in all three models.
+
+### Phonons and thermal conductivity
+
+This is Matbench Discovery's κ_SRME task: the lattice thermal conductivity at
+300 K of the 103 phononDB-PBE binaries, from phono3py and the Wigner transport
+equation. κ_SRME is the mean symmetric relative error, so lower is better. A
+structure that breaks its symmetry or has imaginary modes scores 2. The same
+phonons give the highest frequency and the heat capacity at 300 K against DFT.
+Run through this pipeline, MACE-MPA-0 reproduces its published κ_SRME of 0.4123.
+
+| Model | κ_SRME | κ_SRE | ω_max MAE (THz) | C_V MAE at 300 K (J/K/mol) | Scored 2 |
+|---|---|---|---|---|---|
+| **This work** | 0.381 | 0.201 | 0.62 | 0.12 | 1 (PbS, imaginary modes) |
+| Authors, EnvTok | 0.405 | 0.222 | 0.68 | 0.15 | 0 |
+| MACE-OMAT-0 | 0.248 | 0.127 | 0.31 | 0.066 | 0 |
+| MACE-MPA-0, pipeline check | 0.413 | 0.205 | 0.83 | 0.28 | 0 |
+
+<p align="center">
+  <img src="results/figures/kappa.svg" width="100%" alt="Predicted against DFT thermal conductivity for three models, and the distribution of per-structure errors">
+</p>
+
+*Predicted against DFT conductivity (a–c), and the cumulative share of structures
+by their own κ_SRME (d).*
+
+### WBM relaxations
+
+This is Matbench Discovery's geometry-optimisation task on 10,000 WBM structures,
+drawn with a fixed seed from those whose elements are all in the model's table:
+- **Relaxation:** from the initial WBM geometry with FIRE on a FrechetCellFilter,
+  to 0.05 eV/Å, for at most 500 steps.
+- **Score:** the normalised RMSD to the DFT-relaxed structure, from
+  StructureMatcher. A pair that does not match counts as 1 in the mean.
+- **Pipeline check:** MACE-MPA-0, run through this pipeline, reproduces its
+  published RMSD on the same structures (0.0850 against 0.0854). The median
+  difference per structure is 4e-8.
+
+| Model | Mean RMSD | No match | Median RMSD, matched | Steps, median |
+|---|---|---|---|---|
+| **This work** | 0.089 | 727 | 0.0068 | 27 |
+| Authors, EnvTok | 0.092 | 745 | 0.0071 | 27 |
+| MACE-OMAT-0 | 0.081 | 662 | 0.0052 | 26 |
+| MACE-MPA-0, pipeline check | 0.085 | 688 | 0.0062 | 26 |
+
+<p align="center">
+  <img src="results/figures/wbm.svg" width="100%" alt="Cumulative distribution of the RMSD to the DFT structure for three models, and this work's RMSD per structure against the authors' EnvTok model and MACE-OMAT-0">
+</p>
+
+*The RMSD to the DFT structure: its cumulative distribution (a), and this work
+against the authors' EnvTok model (b) and MACE-OMAT-0 (c), per structure. Values
+below 1e-4, about 20 % of structures, are drawn at 1e-4. The curves in (a) end at
+the share of structures that match.*
+
+- **Unmatched structures:** about 7 % of structures do not match, and they make up
+  most of each mean. 496 of them match in no model.
+- **Level of theory:** the WBM structures were relaxed with the Materials
+  Project's DFT settings, while three of these models were trained on OMat24. So
+  part of the gap is the difference between the two levels of theory; MACE-MPA-0
+  is trained on data with the Materials Project's settings.
+- **Scope:** this is a 10,000-structure subset, and only the RMSD is reported,
+  not the F1 score for stability. These numbers are not comparable with the
+  Matbench Discovery leaderboard.
+
+### Li-ion diffusion in solid electrolytes
+
+Five electrolytes were run, each in its Materials Project structure (351–540 atoms)
+at the fixed PBE cell.
+- **MD:** NVT, 10 ps of equilibration and then 100 ps of production, at 500 to
+  900 K.
+- **Analysis:** D comes from the Li mean squared displacement and Ea from an
+  Arrhenius fit. The conductivity at 300 K is extrapolated with Nernst–Einstein,
+  assuming a Haven ratio of 1.
+- **Excluded runs:** a run whose framework flows is left out of the fit, by a
+  criterion fixed before the runs.
+
+These are predictions compared with AIMD, not with experiment. The table gives Ea
+in eV.
+
+| Electrolyte | This work | Authors, EnvTok | MACE-OMAT-0 | AIMD, same structure |
+|---|---|---|---|---|
+| Li10GeP2S12 | 0.193 | 0.162 | 0.149 | 0.21 ± 0.04; 0.21 |
+| Li7P3S11 | 0.166 | 0.174 | 0.171 | 0.187 |
+| β-Li3PS4 | 0.266 | 0.214 | 0.286 | 0.49 ± 0.02 (500–650 K) |
+| Li6PS5Cl | 0.304 | 0.398 | 0.278 | — |
+| Li3InCl6 | 0.228 | 0.251 | 0.233 | 0.20, another cell |
+
+- **Li7P3S11:** this work's 800 and 900 K runs are left out, because the PS4 and
+  P2S7 units rotate: the non-Li MSD is above 1.5 Å², while every P keeps its four
+  S. Its fit spans 500–700 K.
+- **β-Li3PS4:** fitted over the AIMD's 500–650 K only, the three models give
+  0.257, 0.220 and 0.391 eV, still below 0.49 eV. With only four temperatures,
+  dropping the 500 K point moves these fits by up to 0.05 eV.
+- **Temperatures added later:** 500 and 550 K for Li7P3S11, and 500, 550 and
+  650 K for β-Li3PS4, were added after the first 60 runs.
+- **References:** the AIMD values and their DOIs are in
+  [results/diffusion/literature_aimd.csv](results/diffusion/literature_aimd.csv).
+
+<p align="center">
+  <img src="results/figures/li_diffusion.svg" width="100%" alt="Arrhenius plots of Li diffusion in five electrolytes for three models, with activation energies and room-temperature conductivities against AIMD">
+</p>
+
+*Arrhenius plots (a–e); hollow markers are left out of the fit. Activation energy
+(f) and conductivity at 300 K (g) against AIMD: filled diamonds used the same
+structure, the open one another cell.*
+
 ## Trained model
 
 The weights are attached to the
@@ -321,7 +476,38 @@ atoms.calc = EnvTokCalculator(model, device="cpu", dtype="float64")   # any ASE 
 
 It covers the 68 elements left in OMat24 after removing the lanthanides and
 actinides (Z = 1–56, 72–83). Its energies are on the OMat24 PBE(+U) footing,
-like those of MACE-OMAT-0.
+like those of MACE-OMAT-0. The weights have not changed since v1.0.0. The
+[model card](docs/MODEL_CARD.md) gives the intended use, limits, accuracy and
+speed.
+
+### Using the model in mace-torch and LAMMPS
+
+`envtok-mace export-mace` writes the weights as a mace-torch model file, which
+works with `MACECalculator`, and with mace-torch's LAMMPS export, without this
+package:
+
+```bash
+envtok-mace export-mace --src mace-envtok-1.0.0.pt --dst mace-envtok.model
+python -m mace.cli.create_lammps_model mace-envtok.model   # TorchScript for LAMMPS
+```
+
+On 40 OMat24 frames, the file and this package agree to 5e-5 eV/Å in float32 and
+7e-7 eV/Å in float64. The float64 difference comes from the ZBL exponents, which a
+float32-trained model holds rounded to float32; with them exact, the difference is
+1e-13 eV/Å. The compiled TorchScript model gives the same differences, but it has
+not been run inside LAMMPS itself.
+
+### Inference speed
+
+<p align="center">
+  <img src="results/figures/inference_speed.svg" width="80%" alt="Time and peak memory of one calculator call against the number of atoms, on an A100 with two backends and on 16 CPU cores">
+</p>
+
+*One ASE calculator call with energy, forces, stress and the neighbour list, on fcc
+copper. Copper has 78 edges per atom, about twice as many as a typical OMat24 frame,
+so these times are on the slow side. With cuEquivariance, an A100 takes 0.095 s
+for 1,372 atoms and handles 23,328 atoms in float32. Without it, float32 runs out
+of memory above 4,000 atoms.*
 
 ## What is implemented
 
@@ -336,6 +522,9 @@ like those of MACE-OMAT-0.
 | Loss, optimiser groups, EMA | `train/loss.py`, `train/optim.py` | equal to mace-torch's loss and groups |
 | DDP, load-balanced batches, gradient accumulation, exact resume | `train/` | multi-process equivalence and resume tests |
 | ASE calculator; MatPES, MatCalc, MD-stability and NEB runners | `eval/`, `bench/` | rerun of the authors' models |
+| Diatomic, EOS, NVE, phonon and κ, WBM and Li-diffusion runners | `bench/` | MACE-MPA-0's published κ_SRME and WBM RMSD |
+| Per-structure predictions and their reduction to tables | `eval/predictions.py`, `analysis/accuracy.py` | totals equal to the reported metrics |
+| Export to a mace-torch model file | `model/mace_compat.py` | float64 parity with this package |
 | Figures and their layout check | `plots/` | every figure is checked before it is saved |
 
 All paths are under `src/envtok_mace/`. Spherical harmonics, Wigner 3j symbols
@@ -367,8 +556,12 @@ job script in `scripts/nscc/`, described in [docs/NSCC.md](docs/NSCC.md):
 
 1. Extract the EnvTok subset from OMat24: `extract`, `preprocess`.
 2. Train: `train`.
-3. Evaluate: `eval`, `matpes`, `matcalc`, `stability`, `nebdft2k`, `latent`.
-4. Summarise: `id-ood`, `figures`.
+3. Evaluate on the paper's benchmarks: `eval`, `matpes`, `matcalc`, `stability`,
+   `nebdft2k`, `latent`.
+4. Run the further checks: `accuracy`, `diatomics`, `eos`, `nve`, `kappa`, `wbm`,
+   `diffusion`, `bench-speed --mode infer`. Their protocols are in
+   [docs/BENCHMARKS.md](docs/BENCHMARKS.md).
+5. Summarise: `id-ood`, `learning-curves`, `figures`.
 
 The benchmark dependencies, pinned to the authors' versions, are the `bench`
 extra: `uv sync --extra bench`. The GPU kernels are the `cueq` extra.
@@ -410,8 +603,20 @@ The other works used:
 - A. D. Kaplan et al. *A Foundational Potential Energy Surface Dataset for
   Materials (MatPES).* arXiv:2503.04070 (2025).
 - MatCalc and MatCalc-Bench: https://github.com/materialsvirtuallab/matcalc
-- MLIP Arena stability benchmark (RM24 structures):
+- MLIP Arena: the stability benchmark (RM24 structures), the diatomic and
+  equation-of-state tasks and their WBM set:
   https://huggingface.co/datasets/atomind/mlip-arena
+- J. Riebesell et al. *Matbench Discovery – A framework to evaluate machine
+  learning crystal stability predictions.* arXiv:2308.14920. Its κ_SRME task and
+  WBM relaxation protocol are used here: https://github.com/janosh/matbench-discovery
+- B. Póta, P. Ahlawat, G. Csányi, M. Simoncelli. *Thermal conductivity predictions
+  with foundation atomistic models.* arXiv:2408.00755 (2024).
+- A. Togo, L. Chaput, T. Tadano, I. Tanaka. *Implementation strategies in phonopy
+  and phono3py.* J. Phys.: Condens. Matter 35, 353001 (2023).
+- H.-C. Wang, S. Botti, M. A. L. Marques. *Predicting stable crystalline compounds
+  using chemical similarity (WBM).* npj Comput. Mater. 7, 12 (2021).
+- The AIMD diffusion references are listed with their DOIs in
+  [results/diffusion/literature_aimd.csv](results/diffusion/literature_aimd.csv).
 - A. Dembitskiy et al. *Benchmarking machine learning models for predicting lithium
   ion migration (LiTraj).* npj Comput. Mater. 11, 131 (2025),
   doi:10.1038/s41524-025-01571-z

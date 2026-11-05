@@ -143,6 +143,9 @@ All notable changes to this project are recorded here. The format follows
   current GPU. It now makes its own GPU current around loading and every call.
   A benchmark worker that hits a device fault stops without writing a result, so
   no earlier number is affected. Its message now includes the CUDA error.
+  - This was also the fault that v1.0.0 hit in one MD rank and two NEB ranks,
+    which `docs/BENCHMARKS.md` had put down to a float64 kernel fault. In v1.0.0
+    those runs were redone with e3nn, so its numbers stand.
 
 ### Removed
 
