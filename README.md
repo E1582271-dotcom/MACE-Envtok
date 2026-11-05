@@ -376,6 +376,44 @@ Run through this pipeline, MACE-MPA-0 reproduces its published κ_SRME of 0.4123
 *Predicted against DFT conductivity (a–c), and the cumulative share of structures
 by their own κ_SRME (d).*
 
+### WBM relaxations
+
+This is Matbench Discovery's geometry-optimisation task on 10,000 WBM structures,
+drawn with a fixed seed from those whose elements are all in the model's table:
+- **Relaxation:** from the initial WBM geometry with FIRE on a FrechetCellFilter,
+  to 0.05 eV/Å, for at most 500 steps.
+- **Score:** the normalised RMSD to the DFT-relaxed structure, from
+  StructureMatcher. A pair that does not match counts as 1 in the mean.
+- **Pipeline check:** MACE-MPA-0, run through this pipeline, reproduces its
+  published RMSD on the same structures (0.0850 against 0.0854). The median
+  difference per structure is 4e-8.
+
+| Model | Mean RMSD | No match | Median RMSD, matched | Steps, median |
+|---|---|---|---|---|
+| **This work** | 0.089 | 727 | 0.0068 | 27 |
+| Authors, EnvTok | 0.092 | 745 | 0.0071 | 27 |
+| MACE-OMAT-0 | 0.081 | 662 | 0.0052 | 26 |
+| MACE-MPA-0, pipeline check | 0.085 | 688 | 0.0062 | 26 |
+
+<p align="center">
+  <img src="results/figures/wbm.svg" width="100%" alt="Cumulative distribution of the RMSD to the DFT structure for three models, and this work's RMSD per structure against the authors' EnvTok model and MACE-OMAT-0">
+</p>
+
+*The RMSD to the DFT structure: its cumulative distribution (a), and this work
+against the authors' EnvTok model (b) and MACE-OMAT-0 (c), per structure. Values
+below 1e-4, about 20 % of structures, are drawn at 1e-4. The curves in (a) end at
+the share of structures that match.*
+
+- **Unmatched structures:** about 7 % of structures do not match, and they make up
+  most of each mean. 496 of them match in no model.
+- **Level of theory:** the WBM structures were relaxed with the Materials
+  Project's DFT settings, while three of these models were trained on OMat24. So
+  part of the gap is the difference between the two levels of theory; MACE-MPA-0
+  is trained on data with the Materials Project's settings.
+- **Scope:** this is a 10,000-structure subset, and only the RMSD is reported,
+  not the F1 score for stability. These numbers are not comparable with the
+  Matbench Discovery leaderboard.
+
 ### Li-ion diffusion in solid electrolytes
 
 Five electrolytes were run, each in its Materials Project structure (351–540 atoms)

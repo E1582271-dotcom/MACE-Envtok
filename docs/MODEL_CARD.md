@@ -85,6 +85,7 @@ and the other subset models.
 | | Barrier MAE, hosts with U, eV | 0.259 | 0.270 |
 | phononDB-PBE (103 binaries) | κ_SRME at 300 K (lower is better) | 0.381 | 0.248 |
 | | Highest phonon frequency MAE, THz | 0.62 | 0.31 |
+| WBM relaxations (10,000) | Mean RMSD to the DFT structure | 0.089 | 0.081 |
 
 Li-ion diffusion was run in five solid electrolytes. Three of them have AIMD
 values in the same structure:

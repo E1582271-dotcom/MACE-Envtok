@@ -265,6 +265,55 @@ numbers:
 
 Our model's one failure is PbS, which has imaginary modes.
 
+## WBM relaxations (`envtok-mace wbm`)
+
+**Protocol.** This is Matbench Discovery's geometry-optimisation task:
+1. **Set:** 10,000 structures, drawn with seed 0 from the 123,352 of 256,963 WBM
+   structures whose elements are all in the model's table. They are written
+   once from Matbench Discovery's initial and relaxed extxyz archives, with
+   their checksums in `subset.json`.
+2. **Relaxation:** FIRE on a FrechetCellFilter, from the initial geometry, to
+   0.05 eV/Å in at most 500 steps, without symmetry constraints, in float64.
+   Several workers share a GPU (`wbm_8gpu.pbs`), and finished structures are
+   skipped on a rerun.
+3. **Score:** pymatgen's StructureMatcher with stol 1 and no volume scaling
+   compares the result with the DFT-relaxed structure. Its RMSD is normalised by
+   (V/atom)^(1/3), and a pair that does not match, or a failed relaxation,
+   counts as 1 in the mean.
+
+The two archives list the atoms of about 64 % of structures in different
+orders. So each record keeps its own atomic numbers, and the preparation step
+checks only that the compositions agree.
+
+**Validation.** MACE-MPA-0 reproduces its published RMSDs on the same
+structures:
+
+| Quantity | This pipeline | Published |
+|---|---|---|
+| Mean RMSD | 0.0850 | 0.0854 |
+| No match | 688 | 690 |
+| Median difference per structure, 9,309 matched in both | 4e-8 | — |
+
+On a 200-structure pilot, float32 and float64 gave the same mean.
+
+**Results.** The run used about 6 GPU·h.
+
+| Model | Mean RMSD | No match | Median RMSD, matched | 90th percentile, matched | Not converged | Failed |
+|---|---|---|---|---|---|---|
+| **Ours** | 0.089 | 727 | 0.0068 | 0.039 | 10 | 0 |
+| Authors, EnvTok | 0.092 | 745 | 0.0071 | 0.040 | 6 | 0 |
+| MACE-OMAT-0 | 0.081 | 662 | 0.0052 | 0.032 | 3 | 0 |
+| MACE-MPA-0 | 0.085 | 688 | 0.0062 | 0.037 | 3 | 0 |
+
+**Caveats.**
+- **The mean is mostly unmatched structures.** Over matched structures alone,
+  the mean is 0.016–0.019. 496 structures match in no model.
+- **Levels of theory.** WBM uses the Materials Project's DFT settings, which
+  OMat24 does not, so for the three OMat24-trained models part of the RMSD
+  comes from the level of theory.
+- **Scope.** This is a subset with RMSD only. The F1 score for stability needs
+  energies on the Materials Project footing, and is left out.
+
 ## Li-ion diffusion in solid electrolytes (`envtok-mace diffusion`)
 
 **Protocol.**
