@@ -1442,6 +1442,116 @@ def kappa(results: Path, out: Path) -> None:
         save(fig, out, "kappa")
 
 
+@figure
+def wbm(results: Path, out: Path) -> None:
+    """How close to the DFT geometry do the models relax the WBM structures?"""
+    import matplotlib.pyplot as plt
+    from matplotlib.lines import Line2D
+
+    summary = read_json(results / "wbm/wbm_summary.json")["models"]
+    rows = read_csv(results / "wbm/wbm_structures.csv")
+    models = ("ours", "authors_envtok", "mace_omat0")
+
+    def rmsd(m):  # None where the relaxation failed or found no match
+        return [float(r[f"{m}_rmsd"]) if r[f"{m}_rmsd"] else None for r in rows]
+
+    low, high = 1e-4, 1.0
+    ticks = [1e-4, 1e-3, 1e-2, 1e-1, 1]
+    with style():
+        fig, axes = plt.subplots(1, 3, figsize=(DOUBLE_COLUMN_IN, 2.35))
+        for ax in axes:
+            ax.set_box_aspect(1)
+        ax = axes[0]
+        for m in models:
+            x = np.sort([v for v in rmsd(m) if v is not None])
+            share = np.arange(1, len(x) + 1) / len(rows)
+            ax.step(
+                np.clip(x, low, None),
+                share,
+                where="post",
+                color=line_color(m),
+                lw=1.0,
+                ls=MODELS[m].get("linestyle", "-"),
+            )
+        ax.set_xscale("log")
+        ax.set_xlim(low, high)
+        ax.set_ylim(0, 1.02)
+        ax.set_xticks(ticks, ["10$^{-4}$", "10$^{-3}$", "0.01", "0.1", "1"])
+        ax.minorticks_off()
+        ax.set_xlabel("RMSD to the DFT structure, normalised")
+        ax.set_ylabel("Share of structures")
+        lines = []
+        for m in models:
+            s = summary[m]
+            name = MODELS[m]["label"].split(" (")[0]
+            lines.append(f"{name}: mean {s['rmsd_mean']:.3f}, no match {s['n_unmatched'] + s['n_failed']:,}")
+        # below 1e-4 the curves rise at the left edge, so the lower right is free
+        ax.text(0.97, 0.04, "\n".join(lines), transform=ax.transAxes, va="bottom", ha="right", fontsize=5.2)
+        letter(ax, "a", x=-0.2)
+
+        mine = rmsd("ours")
+        for ax, other, tag in zip(axes[1:], models[1:], "bc"):
+            theirs = rmsd(other)
+            pairs = np.array([(a, b) for a, b in zip(theirs, mine) if a is not None and b is not None])
+            ax.plot([low, high], [low, high], color=INK["muted"], lw=0.6, zorder=1)
+            ax.plot(
+                np.clip(pairs[:, 0], low, None),
+                np.clip(pairs[:, 1], low, None),
+                "o",
+                color=color("ours"),
+                ms=1.0,
+                mew=0,
+                alpha=0.15,
+                rasterized=True,
+            )
+            ax.set_xscale("log")
+            ax.set_yscale("log")
+            ax.set_xlim(low, high)
+            ax.set_ylim(low, high)
+            labels = ["10$^{-4}$", "10$^{-3}$", "0.01", "0.1", "1"]
+            ax.set_xticks(ticks, labels)
+            ax.set_yticks(ticks, labels)
+            ax.minorticks_off()
+            name = {"authors_envtok": "authors' EnvTok", "mace_omat0": "MACE-OMAT-0"}[other]
+            ax.set_xlabel(f"RMSD, {name}")
+            ax.set_ylabel("RMSD, this work")
+            only_mine = sum(a is None and b is not None for a, b in zip(theirs, mine))
+            only_theirs = sum(a is not None and b is None for a, b in zip(theirs, mine))
+            both = sum(a is None and b is None for a, b in zip(theirs, mine))
+            # above the frame: no corner of these panels is free of points
+            ax.text(
+                1.0,
+                1.02,
+                f"matched by both {len(pairs):,}, by neither {both:,}\n"
+                f"only by this work {only_mine:,}, only by {name} {only_theirs:,}",
+                transform=ax.transAxes,
+                va="bottom",
+                ha="right",
+                fontsize=5.2,
+            )
+            letter(ax, tag, x=-0.2)
+        fig.legend(
+            handles=[
+                Line2D(
+                    [],
+                    [],
+                    color=line_color(m),
+                    lw=0.9,
+                    ls=MODELS[m].get("linestyle", "-"),
+                    label=MODELS[m]["label"],
+                )
+                for m in models
+            ],
+            loc="upper center",
+            bbox_to_anchor=(0.5, 1.01),
+            ncol=3,
+            fontsize=5.8,
+            columnspacing=1.4,
+        )
+        fig.subplots_adjust(left=0.075, right=0.99, top=0.86, bottom=0.17, wspace=0.45)
+        save(fig, out, "wbm")
+
+
 ELECTROLYTES = {
     "LGPS": "Li$_{10}$GeP$_2$S$_{12}$",
     "Li7P3S11": "Li$_7$P$_3$S$_{11}$",

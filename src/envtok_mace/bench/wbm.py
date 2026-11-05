@@ -40,6 +40,7 @@ SEED = 0
 FMAX = 0.05  # eV/A
 MAX_STEPS = 500
 STOL = 1.0  # StructureMatcher site tolerance; also the RMSD given to a pair that does not match
+PER_MODEL = ("rmsd", "steps", "error")  # columns of each model in wbm_structures.csv
 
 
 # ------------------------------------------------------------------ structures
@@ -238,6 +239,22 @@ def score(records: dict[str, dict], references: list, label: str, workers: int =
     return [{"model": label, **r} for r in rows]
 
 
+def wide(rows: list[dict], references: list) -> list[dict]:
+    """One row per structure, with every model's RMSD, steps and error side by side:
+    four models in long form would be too large a file to keep in the repository."""
+    table = {
+        a.info["material_id"]: {
+            "id": a.info["material_id"],
+            "formula": a.get_chemical_formula(),
+            "natoms": len(a),
+        }
+        for a in references
+    }
+    for r in rows:
+        table[r["id"]].update({f"{r['model']}_{k}": r[k] for k in PER_MODEL})
+    return list(table.values())
+
+
 def aggregate(rows: list[dict]) -> dict:
     """Per model, Matbench Discovery's mean RMSD (a failed or unmatched structure counts
     as ``STOL``), and the distribution over the matched structures."""
@@ -295,11 +312,11 @@ def write_tables(args: argparse.Namespace) -> None:
         }
     out = Path(args.tables)
     out.mkdir(parents=True, exist_ok=True)
-    fields = list(dict.fromkeys(k for r in rows for k in r))
+    table = wide(rows, references)
     with (out / "wbm_structures.csv").open("w", newline="") as fh:
-        w = csv.DictWriter(fh, fieldnames=fields, lineterminator="\n")
+        w = csv.DictWriter(fh, fieldnames=list(table[0]), lineterminator="\n")
         w.writeheader()
-        for r in rows:
+        for r in table:
             w.writerow({k: (f"{v:.6g}" if isinstance(v, float) else v) for k, v in r.items()})
     (out / "wbm_summary.json").write_text(json.dumps(summary, indent=1) + "\n")
     for label, s in summary["models"].items():

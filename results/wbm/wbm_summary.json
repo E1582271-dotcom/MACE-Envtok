@@ -1,0 +1,56 @@
+{
+ "models": {
+  "ours": {
+   "n_structures": 10000,
+   "n_failed": 0,
+   "failures": {},
+   "n_unconverged": 10,
+   "n_unmatched": 727,
+   "rmsd_mean": 0.08946398587699753,
+   "rmsd_median_matched": 0.006796322984625063,
+   "rmsd_p90_matched": 0.038716096215991154,
+   "steps_median": 27.0
+  },
+  "authors_envtok": {
+   "n_structures": 10000,
+   "n_failed": 0,
+   "failures": {},
+   "n_unconverged": 6,
+   "n_unmatched": 745,
+   "rmsd_mean": 0.09204590501583763,
+   "rmsd_median_matched": 0.007142819444637936,
+   "rmsd_p90_matched": 0.04013195496334848,
+   "steps_median": 27.0
+  },
+  "mace_omat0": {
+   "n_structures": 10000,
+   "n_failed": 0,
+   "failures": {},
+   "n_unconverged": 3,
+   "n_unmatched": 662,
+   "rmsd_mean": 0.08100715735555666,
+   "rmsd_median_matched": 0.005174536586967999,
+   "rmsd_p90_matched": 0.03193766008850462,
+   "steps_median": 26.0
+  },
+  "mace_mpa0": {
+   "n_structures": 10000,
+   "n_failed": 0,
+   "failures": {},
+   "n_unconverged": 3,
+   "n_unmatched": 688,
+   "rmsd_mean": 0.08502811856306071,
+   "rmsd_median_matched": 0.006232696784610073,
+   "rmsd_p90_matched": 0.03731914650348222,
+   "steps_median": 26.0
+  }
+ },
+ "published": {
+  "mace_mpa0": {
+   "rmsd_mean": 0.08535136357691256,
+   "n_unmatched": 690,
+   "n_both_matched": 9309,
+   "median_abs_difference": 3.611350051120621e-08
+  }
+ }
+}

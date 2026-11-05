@@ -50,6 +50,24 @@ All notable changes to this project are recorded here. The format follows
   equation on CPU cores. Each structure also gets ω_max and the heat capacity,
   free energy and entropy at 300 K against the DFT phonons. MACE-MPA-0 reproduces
   its published κ_SRME (0.4131 against 0.4123), κ_SRE (0.2048) and failure rate (0).
+- **WBM relaxations** (`envtok-mace wbm`, `scripts/nscc/wbm_8gpu.pbs`,
+  `results/wbm/`, figure `wbm`). Matbench Discovery's geometry-optimisation
+  protocol on 10,000 WBM structures, drawn with a fixed seed from those whose
+  elements are all in the model's table:
+  - Relaxation: FIRE on a FrechetCellFilter to 0.05 eV/Å, for at most 500 steps,
+    in float64, for this work, the authors' EnvTok model, MACE-OMAT-0 and
+    MACE-MPA-0.
+  - Scoring: the normalised RMSD to the DFT-relaxed structure, from
+    StructureMatcher. A pair that does not match counts as 1 in the mean.
+  - MACE-MPA-0 reproduces its published RMSD on the same structures: 0.0850
+    against 0.0854, with a median per-structure difference of 4e-8.
+  - Mean RMSD: 0.089 (this work), 0.092 (authors) and 0.081 (MACE-OMAT-0).
+    Most of each mean comes from the 7 % of structures that do not match, and
+    496 of those match in no model.
+  - Only the RMSD is reported. The F1 score for stability is out of scope.
+  - The OMat24-trained models are compared with DFT that uses the Materials
+    Project's settings, so part of the gap is the difference between the two
+    levels of theory.
 - **Li-ion diffusion in solid electrolytes** (`envtok-mace diffusion`,
   `scripts/nscc/diffusion_8gpu.pbs`, `results/diffusion/`, figure `li_diffusion`).
   Five electrolytes (LGPS, Li7P3S11, β-Li3PS4, Li6PS5Cl, Li3InCl6) were run

@@ -150,6 +150,9 @@ def test_the_summary_compares_with_published_rmsds(tmp_path):
     wbm.write_tables(args)
     s = json.loads((tmp_path / "tables/wbm_summary.json").read_text())
     assert s["models"]["m"]["rmsd_mean"] == pytest.approx(0, abs=1e-8)
+    table = (tmp_path / "tables/wbm_structures.csv").read_text().splitlines()
+    assert table[0] == "id,formula,natoms,m_rmsd,m_steps,m_error" and len(table) == 1 + len(ids)
+    assert table[1].startswith(f"{ids[0]},Cl4Na4,8,")
     p = s["published"]["m"]
     assert p["rmsd_mean"] == pytest.approx((0.01 + wbm.STOL + 0.03) / 3)
     assert (p["n_unmatched"], p["n_both_matched"]) == (1, 2)
