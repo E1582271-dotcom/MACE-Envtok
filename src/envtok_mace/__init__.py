@@ -6,4 +6,4 @@ import torch as _torch
 # `slice` objects; torch >= 2.6 only unpickles allow-listed types by default.
 _torch.serialization.add_safe_globals([slice])
 
-__version__ = "0.1.0"
+__version__ = "1.1.0"
