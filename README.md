@@ -79,6 +79,7 @@ enough to attribute them.
 - [What is implemented](#what-is-implemented)
 - [Reproduce](#reproduce)
 - [Repository layout](#repository-layout)
+- [Related projects](#related-projects)
 - [Citation](#citation) · [Acknowledgements](#acknowledgements) · [License](#license)
 
 ## Training
@@ -585,6 +586,15 @@ tests/             unit, parity, distributed and figure tests; 40 OMat24 structu
 docs/              parity, cluster notes, benchmark protocols
 results/           every reported number and figure, small files only
 ```
+
+## Related projects
+
+A standalone part of a computational portfolio on sulfide solid electrolytes by the same author:
+
+- [Solid-Electrolyte-Screening](https://github.com/E1582271-dotcom/Solid-Electrolyte-Screening) screens all 21,712 Li-containing Materials Project entries down to 62 candidate Li–S compositions.
+- [Solid-Electrolyte-MLIP-MD](https://github.com/E1582271-dotcom/Solid-Electrolyte-MLIP-MD) classifies those 62 compositions with MACE-MP-0 molecular dynamics under a pre-registered protocol (11 fast conductors).
+- [Solid-Electrolyte-Inverse-Design](https://github.com/E1582271-dotcom/Solid-Electrolyte-Inverse-Design) generates Li–P–S structures outside the Materials Project with MatterGen (43 stable, unique and novel; not yet simulated).
+- [MLIP-fine-tune](https://github.com/E1582271-dotcom/MLIP-fine-tune) compares universal and DFT-fine-tuned potentials with DFT and AIMD for Li transport in Li<sub>6</sub>PS<sub>5</sub>Cl.
 
 ## Citation
 
